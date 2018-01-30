@@ -1,13 +1,13 @@
 module Main exposing (..)
 
-import ApiCollection exposing (Msg(..))
+import JsonApi
 import Html exposing (Html, div, text)
 import Html.Events exposing (onClick)
 import Article exposing (Article, articleDecoder, encodeArticle)
 
 
 type alias Model =
-    { articles : ApiCollection.Model Article
+    { articles : JsonApi.Collection Article
     }
 
 
@@ -22,18 +22,18 @@ main =
 
 
 type Msg
-    = ApiCollectionMsg (ApiCollection.Msg Article)
+    = JsonApiMsg (JsonApi.Msg Article)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ApiCollectionMsg apiArticlesMsg ->
+        JsonApiMsg apiMsg ->
             let
                 ( updatedArticles, newCmd ) =
-                    ApiCollection.update apiArticlesMsg model.articles
+                    JsonApi.update apiMsg model.articles
             in
-                ( { model | articles = updatedArticles }, Cmd.map ApiCollectionMsg newCmd )
+                ( { model | articles = updatedArticles }, Cmd.map JsonApiMsg newCmd )
 
 
 subscriptions : Model -> Sub Msg
@@ -74,15 +74,15 @@ articleView : Article -> Html Msg
 articleView article =
     div []
         [ text article.title
-        , Html.button [ onClick (ApiCollectionMsg <| Put article) ] [ text "Update" ]
-        , Html.button [ onClick (ApiCollectionMsg <| Delete article) ] [ text "Delete" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Put article) ] [ text "Update" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Delete article) ] [ text "Delete" ]
         ]
 
 
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (ApiCollectionMsg GetIndex) ] [ text "Load Articles" ]
-        , Html.button [ onClick (ApiCollectionMsg (Post newArticle)) ] [ text "Save New Article" ]
+        [ Html.button [ onClick (JsonApiMsg JsonApi.GetIndex) ] [ text "Load Articles" ]
+        , Html.button [ onClick (JsonApiMsg (JsonApi.Post newArticle)) ] [ text "Save New Article" ]
         ]
             ++ (List.map articleView model.articles.collection)

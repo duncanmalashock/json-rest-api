@@ -1,11 +1,11 @@
-module ApiCollection exposing (Model, Msg(..), update)
+module JsonApi exposing (Collection, Msg(..), update)
 
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 
 
-type alias Model resource =
+type alias Collection resource =
     { collection : List resource
     , error : Maybe Error
     , decoder : Decoder resource
@@ -34,7 +34,7 @@ type Msg resource
     | DeleteResponse (Result Error resource)
 
 
-update : Msg resource -> Model resource -> ( Model resource, Cmd (Msg resource) )
+update : Msg resource -> Collection resource -> ( Collection resource, Cmd (Msg resource) )
 update msg model =
     case msg of
         GetIndex ->
@@ -96,13 +96,13 @@ deleteUrl id =
     "https://jsonplaceholder.typicode.com/posts/" ++ toString id
 
 
-getIndex : Model resource -> Cmd (Msg resource)
+getIndex : Collection resource -> Cmd (Msg resource)
 getIndex model =
     Http.get model.urls.getIndex (Decode.list model.decoder)
         |> Http.send GetIndexResponse
 
 
-post : Model resource -> resource -> Cmd (Msg resource)
+post : Collection resource -> resource -> Cmd (Msg resource)
 post model article =
     Http.post
         model.urls.post
@@ -111,7 +111,7 @@ post model article =
         |> Http.send PostResponse
 
 
-put : Model resource -> resource -> Cmd (Msg resource)
+put : Collection resource -> resource -> Cmd (Msg resource)
 put model article =
     putRequest
         (putUrl <| model.idAccessor article)
@@ -120,7 +120,7 @@ put model article =
         |> Http.send PutResponse
 
 
-delete : Model resource -> resource -> Cmd (Msg resource)
+delete : Collection resource -> resource -> Cmd (Msg resource)
 delete model article =
     deleteRequest
         (deleteUrl <| model.idAccessor article)
