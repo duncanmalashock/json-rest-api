@@ -69,62 +69,62 @@ update msg collection =
             ( collection, delete collection urlSubstitutions resource )
 
         GetIndexResponse result ->
-            case result of
-                Ok value ->
-                    ( { collection
-                        | resources = value
-                        , error = Nothing
-                      }
-                    , Cmd.none
-                    )
-
-                Err error ->
-                    ( { collection
-                        | error = Just error
-                      }
-                    , Cmd.none
-                    )
+            handleListResponse result (\newList _ -> newList) collection
 
         PostResponse result ->
-            case result of
-                Ok value ->
-                    ( { collection
-                        | resources = value :: collection.resources
-                        , error = Nothing
-                      }
-                    , Cmd.none
-                    )
-
-                Err error ->
-                    ( { collection
-                        | error = Just error
-                      }
-                    , Cmd.none
-                    )
+            handleSingleResponse result (\newResource _ list -> newResource :: list) collection
 
         PatchResponse result ->
-            case result of
-                Ok value ->
-                    ( collection, Cmd.none )
-
-                Err error ->
-                    ( { collection
-                        | error = Just error
-                      }
-                    , Cmd.none
-                    )
+            handleSingleResponse result (\newResource idAccessor list -> list) collection
 
         DeleteResponse result ->
-            case result of
-                Ok value ->
-                    ( collection, Cmd.none )
+            handleSingleResponse result (\newResource idAccessor list -> list) collection
 
-                Err error ->
-                    ( { collection
-                        | error = Just error
-                      }
-                    , Cmd.none
-                    )
+
+handleListResponse :
+    Result Error (List resource)
+    -> (List resource -> List resource -> List resource)
+    -> Collection resource
+    -> ( Collection resource, Cmd (Msg resource) )
+handleListResponse result updateFn collection =
+    case result of
+        Ok value ->
+            ( { collection
+                | resources = updateFn value collection.resources
+                , error = Nothing
+              }
+            , Cmd.none
+            )
+
+        Err error ->
+            ( { collection
+                | error = Just error
+              }
+            , Cmd.none
+            )
+
+
+handleSingleResponse :
+    Result Error resource
+    -> (resource -> (resource -> String) -> List resource -> List resource)
+    -> Collection resource
+    -> ( Collection resource, Cmd (Msg resource) )
+handleSingleResponse result updateFn collection =
+    case result of
+        Ok value ->
+            ( { collection
+                | resources = updateFn value collection.idAccessor collection.resources
+                , error = Nothing
+              }
+            , Cmd.none
+            )
+
+        Err error ->
+            ( { collection
+                | error = Just error
+              }
+            , Cmd.none
+            )
 
 
 getIndex : Collection resource -> UrlSubstitutions -> Cmd (Msg resource)
