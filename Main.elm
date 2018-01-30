@@ -1,32 +1,15 @@
 module Main exposing (..)
 
-import ApiArticles exposing (Msg(..))
+import ApiCollection exposing (Msg(..))
 import Article exposing (Article)
 import Html exposing (Html, div, text)
 import Html.Events exposing (onClick)
-import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline as Pipeline
+import Article exposing (Article, articleDecoder, encodeArticle)
 
 
 type alias Model =
-    { apiArticles : ApiArticles.Model
+    { articles : ApiCollection.Model
     }
-
-
-type alias IdRecord =
-    { id : Int
-    }
-
-
-idRecordDecoder : Decoder IdRecord
-idRecordDecoder =
-    Pipeline.decode IdRecord
-        |> Pipeline.required "id" Decode.int
-
-
-emptyDecoder : Decoder {}
-emptyDecoder =
-    Pipeline.decode {}
 
 
 main : Program Never Model Msg
@@ -40,18 +23,18 @@ main =
 
 
 type Msg
-    = ApiArticlesMsg ApiArticles.Msg
+    = ApiCollectionMsg ApiCollection.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ApiArticlesMsg apiArticlesMsg ->
+        ApiCollectionMsg apiArticlesMsg ->
             let
-                ( newApiArticles, newCmd ) =
-                    ApiArticles.update apiArticlesMsg model.apiArticles
+                ( updatedArticles, newCmd ) =
+                    ApiCollection.update apiArticlesMsg model.articles
             in
-                ( { model | apiArticles = newApiArticles }, Cmd.map ApiArticlesMsg newCmd )
+                ( { model | articles = updatedArticles }, Cmd.map ApiCollectionMsg newCmd )
 
 
 subscriptions : Model -> Sub Msg
@@ -61,8 +44,8 @@ subscriptions model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { apiArticles =
-            { articles = []
+    ( { articles =
+            { collection = []
             , error = Nothing
             }
       }
@@ -83,15 +66,15 @@ articleView : Article -> Html Msg
 articleView article =
     div []
         [ text article.title
-        , Html.button [ onClick (ApiArticlesMsg <| PutArticle article) ] [ text "Update" ]
-        , Html.button [ onClick (ApiArticlesMsg <| DeleteArticle article) ] [ text "Delete" ]
+        , Html.button [ onClick (ApiCollectionMsg <| PutArticle article) ] [ text "Update" ]
+        , Html.button [ onClick (ApiCollectionMsg <| DeleteArticle article) ] [ text "Delete" ]
         ]
 
 
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (ApiArticlesMsg GetArticleIndex) ] [ text "Load Articles" ]
-        , Html.button [ onClick (ApiArticlesMsg (PostArticle newArticle)) ] [ text "Save New Article" ]
+        [ Html.button [ onClick (ApiCollectionMsg GetArticleIndex) ] [ text "Load Articles" ]
+        , Html.button [ onClick (ApiCollectionMsg (PostArticle newArticle)) ] [ text "Save New Article" ]
         ]
-            ++ (List.map articleView model.apiArticles.articles)
+            ++ (List.map articleView model.articles.collection)

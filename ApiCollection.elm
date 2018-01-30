@@ -1,4 +1,4 @@
-module ApiArticles exposing (..)
+module ApiCollection exposing (..)
 
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
@@ -6,7 +6,7 @@ import Article exposing (Article, articleDecoder, encodeArticle)
 
 
 type alias Model =
-    { articles : List Article
+    { collection : List Article
     , error : Maybe Error
     }
 
@@ -31,7 +31,7 @@ update msg model =
         GetArticleIndexResponse result ->
             case result of
                 Ok value ->
-                    ( { model | articles = value }, Cmd.none )
+                    ( { model | collection = value }, Cmd.none )
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
@@ -42,7 +42,7 @@ update msg model =
         PostArticleResponse result ->
             case result of
                 Ok value ->
-                    ( { model | articles = value :: model.articles }, Cmd.none )
+                    ( { model | collection = value :: model.collection }, Cmd.none )
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
