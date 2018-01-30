@@ -8,6 +8,7 @@ module JsonApi
 
 import CustomRequests
 import UrlSubstitution exposing (UrlSubstitutions)
+import RemoteData exposing (RemoteData)
 import List.Extra
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -15,7 +16,7 @@ import Http exposing (Error)
 
 
 type alias Collection resource =
-    { resources : List resource
+    { resources : RemoteData Error (List resource)
     , error : Maybe Error
     , decoder : Decoder resource
     , encoder : resource -> Encode.Value
@@ -34,7 +35,7 @@ type alias Urls =
 
 initCollection : Decoder resource -> (resource -> Encode.Value) -> (resource -> String) -> Urls -> Collection resource
 initCollection decoder encoder idAccessor urls =
-    { resources = []
+    { resources = RemoteData.NotAsked
     , error = Nothing
     , decoder = decoder
     , encoder = encoder
@@ -72,7 +73,7 @@ update msg collection =
         GetIndexResponse result ->
             handleListResponse result
                 (\newList _ -> newList)
-                collection
+                { collection | resources = RemoteData.fromResult result }
 
         PostResponse result ->
             handleSingleResponse result
@@ -108,7 +109,7 @@ handleListResponse result updateFn collection =
     case result of
         Ok value ->
             ( { collection
-                | resources = updateFn value collection.resources
+                | resources = RemoteData.map (updateFn value) collection.resources
                 , error = Nothing
               }
             , Cmd.none
@@ -131,7 +132,7 @@ handleSingleResponse result updateFn collection =
     case result of
         Ok value ->
             ( { collection
-                | resources = updateFn value collection.idAccessor collection.resources
+                | resources = RemoteData.map (updateFn value collection.idAccessor) collection.resources
                 , error = Nothing
               }
             , Cmd.none

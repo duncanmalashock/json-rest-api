@@ -1,9 +1,10 @@
 module Main exposing (..)
 
+import Todo exposing (Todo, todoDecoder, encodeTodo)
 import JsonApi
+import RemoteData
 import Html exposing (Html, div, text)
 import Html.Events exposing (onClick)
-import Todo exposing (Todo, todoDecoder, encodeTodo)
 
 
 type alias Model =
@@ -99,4 +100,4 @@ view model =
     div [] <|
         [ Html.button [ onClick (TodoApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
         ]
-            ++ (List.map todoView model.todos.resources)
+            ++ (List.map todoView (RemoteData.withDefault [] model.todos.resources))
