@@ -1,4 +1,4 @@
-module Article exposing (..)
+module Article exposing (Article, articleDecoder, encodeArticle)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
