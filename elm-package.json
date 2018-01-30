@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "Simple JSON API library, including an auto-updating list of resources.",
-    "repository": "https://github.com/duncanmalashock/json-api",
+    "repository": "https://github.com/duncanmalashock/json-api.git",
     "license": "BSD3",
     "source-directories": [
         "."
