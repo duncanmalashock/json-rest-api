@@ -3,36 +3,44 @@ module ApiCollection exposing (..)
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Article exposing (Article, articleDecoder, encodeArticle)
 
 
-type alias Model =
-    { collection : List Article
+type alias Model resource =
+    { collection : List resource
     , error : Maybe Error
-    , decoder : Decoder Article
-    , encoder : Article -> Encode.Value
-    , idAccessor : Article -> Int
+    , decoder : Decoder resource
+    , encoder : resource -> Encode.Value
+    , idAccessor : resource -> Int
+    , urls : Urls
     }
 
 
-type Msg
-    = GetArticleIndex
-    | GetArticleIndexResponse (Result Error (List Article))
-    | PostArticle Article
-    | PostArticleResponse (Result Error Article)
-    | PutArticle Article
-    | PutArticleResponse (Result Error Article)
-    | DeleteArticle Article
-    | DeleteArticleResponse (Result Error Article)
+type alias Urls =
+    { getIndex : String
+    , post : String
+    , put : String
+    , delete : String
+    }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+type Msg resource
+    = GetIndex
+    | GetIndexResponse (Result Error (List resource))
+    | Post resource
+    | PostResponse (Result Error resource)
+    | Put resource
+    | PutResponse (Result Error resource)
+    | Delete resource
+    | DeleteResponse (Result Error resource)
+
+
+update : Msg resource -> Model resource -> ( Model resource, Cmd (Msg resource) )
 update msg model =
     case msg of
-        GetArticleIndex ->
-            ( model, getArticleIndex model )
+        GetIndex ->
+            ( model, getIndex model )
 
-        GetArticleIndexResponse result ->
+        GetIndexResponse result ->
             case result of
                 Ok value ->
                     ( { model | collection = value }, Cmd.none )
@@ -40,32 +48,25 @@ update msg model =
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
 
-        PostArticle article ->
-            ( model, postArticle model article )
+        Post article ->
+            ( model, post model article )
 
-        PostArticleResponse result ->
+        PostResponse result ->
             case result of
                 Ok value ->
-                    ( { model | collection = value :: model.collection }, Cmd.none )
+                    ( { model
+                        | collection = value :: model.collection
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
 
-        PutArticle article ->
-            ( model, putArticle model article )
+        Put article ->
+            ( model, put model article )
 
-        PutArticleResponse result ->
-            case result of
-                Ok value ->
-                    ( model, Cmd.none )
-
-                Err error ->
-                    ( { model | error = Just error }, Cmd.none )
-
-        DeleteArticle article ->
-            ( model, deleteArticle model article )
-
-        DeleteArticleResponse result ->
+        PutResponse result ->
             case result of
                 Ok value ->
                     ( model, Cmd.none )
@@ -73,53 +74,63 @@ update msg model =
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
 
+        Delete article ->
+            ( model, delete model article )
 
-getArticleIndexUrl : String
-getArticleIndexUrl =
-    "https://jsonplaceholder.typicode.com/posts"
+        DeleteResponse result ->
+            case result of
+                Ok value ->
+                    ( model, Cmd.none )
+
+                Err error ->
+                    ( { model | error = Just error }, Cmd.none )
 
 
-postArticleUrl : String
-postArticleUrl =
-    "https://jsonplaceholder.typicode.com/posts"
-
-
-putArticleUrl : Int -> String
-putArticleUrl id =
+putUrl : Int -> String
+putUrl id =
     "https://jsonplaceholder.typicode.com/posts/" ++ toString id
 
 
-deleteArticleUrl : Int -> String
-deleteArticleUrl id =
+deleteUrl : Int -> String
+deleteUrl id =
     "https://jsonplaceholder.typicode.com/posts/" ++ toString id
 
 
-getArticleIndex : Model -> Cmd Msg
-getArticleIndex model =
-    Http.get getArticleIndexUrl (Decode.list model.decoder)
-        |> Http.send GetArticleIndexResponse
+getIndex : Model resource -> Cmd (Msg resource)
+getIndex model =
+    Http.get model.urls.getIndex (Decode.list model.decoder)
+        |> Http.send GetIndexResponse
 
 
-postArticle : Model -> Article -> Cmd Msg
-postArticle model article =
-    Http.post postArticleUrl (Http.jsonBody <| model.encoder article) model.decoder
-        |> Http.send PostArticleResponse
+post : Model resource -> resource -> Cmd (Msg resource)
+post model article =
+    Http.post
+        model.urls.post
+        (Http.jsonBody <| model.encoder article)
+        model.decoder
+        |> Http.send PostResponse
 
 
-putArticle : Model -> Article -> Cmd Msg
-putArticle model article =
-    put (putArticleUrl <| model.idAccessor article) (Http.jsonBody <| model.encoder article) model.decoder
-        |> Http.send PutArticleResponse
+put : Model resource -> resource -> Cmd (Msg resource)
+put model article =
+    putRequest
+        (putUrl <| model.idAccessor article)
+        (Http.jsonBody <| model.encoder article)
+        model.decoder
+        |> Http.send PutResponse
 
 
-deleteArticle : Model -> Article -> Cmd Msg
-deleteArticle model article =
-    delete (deleteArticleUrl <| model.idAccessor article) (Http.jsonBody <| model.encoder article) model.decoder
-        |> Http.send DeleteArticleResponse
+delete : Model resource -> resource -> Cmd (Msg resource)
+delete model article =
+    deleteRequest
+        (deleteUrl <| model.idAccessor article)
+        (Http.jsonBody <| model.encoder article)
+        model.decoder
+        |> Http.send DeleteResponse
 
 
-put : String -> Http.Body -> Decoder a -> Http.Request a
-put url body decoder =
+putRequest : String -> Http.Body -> Decoder a -> Http.Request a
+putRequest url body decoder =
     Http.request
         { method = "PUT"
         , headers =
@@ -134,8 +145,8 @@ put url body decoder =
         }
 
 
-delete : String -> Http.Body -> Decoder a -> Http.Request a
-delete url body decoder =
+deleteRequest : String -> Http.Body -> Decoder a -> Http.Request a
+deleteRequest url body decoder =
     Http.request
         { method = "DELETE"
         , headers =

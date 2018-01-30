@@ -8,7 +8,7 @@ import Article exposing (Article, articleDecoder, encodeArticle)
 
 
 type alias Model =
-    { articles : ApiCollection.Model
+    { articles : ApiCollection.Model Article
     }
 
 
@@ -23,7 +23,7 @@ main =
 
 
 type Msg
-    = ApiCollectionMsg ApiCollection.Msg
+    = ApiCollectionMsg (ApiCollection.Msg Article)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -49,6 +49,13 @@ init =
             , error = Nothing
             , decoder = articleDecoder
             , encoder = encodeArticle
+            , idAccessor = .id
+            , urls =
+                { getIndex = "https://jsonplaceholder.typicode.com/posts"
+                , post = "https://jsonplaceholder.typicode.com/posts"
+                , put = "https://jsonplaceholder.typicode.com/posts/"
+                , delete = "https://jsonplaceholder.typicode.com/posts/"
+                }
             }
       }
     , Cmd.none
@@ -68,15 +75,15 @@ articleView : Article -> Html Msg
 articleView article =
     div []
         [ text article.title
-        , Html.button [ onClick (ApiCollectionMsg <| PutArticle article) ] [ text "Update" ]
-        , Html.button [ onClick (ApiCollectionMsg <| DeleteArticle article) ] [ text "Delete" ]
+        , Html.button [ onClick (ApiCollectionMsg <| Put article) ] [ text "Update" ]
+        , Html.button [ onClick (ApiCollectionMsg <| Delete article) ] [ text "Delete" ]
         ]
 
 
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (ApiCollectionMsg GetArticleIndex) ] [ text "Load Articles" ]
-        , Html.button [ onClick (ApiCollectionMsg (PostArticle newArticle)) ] [ text "Save New Article" ]
+        [ Html.button [ onClick (ApiCollectionMsg GetIndex) ] [ text "Load Articles" ]
+        , Html.button [ onClick (ApiCollectionMsg (Post newArticle)) ] [ text "Save New Article" ]
         ]
             ++ (List.map articleView model.articles.collection)
