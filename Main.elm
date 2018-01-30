@@ -7,7 +7,7 @@ import Todo exposing (Todo, todoDecoder, encodeTodo)
 
 
 type alias Model =
-    { articles : JsonApi.Collection Todo
+    { todos : JsonApi.Collection Todo
     }
 
 
@@ -31,9 +31,9 @@ update msg model =
         JsonApiMsg apiMsg ->
             let
                 ( updatedTodos, newCmd ) =
-                    JsonApi.update apiMsg model.articles
+                    JsonApi.update apiMsg model.todos
             in
-                ( { model | articles = updatedTodos }, Cmd.map JsonApiMsg newCmd )
+                ( { model | todos = updatedTodos }, Cmd.map JsonApiMsg newCmd )
 
 
 subscriptions : Model -> Sub Msg
@@ -43,7 +43,7 @@ subscriptions model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { articles =
+    ( { todos =
             { collection = []
             , error = Nothing
             , decoder = todoDecoder
@@ -70,12 +70,26 @@ newTodo =
     }
 
 
-articleView : Todo -> Html Msg
-articleView article =
+todoView : Todo -> Html Msg
+todoView todo =
     div []
-        [ text article.title
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Put article [ ( ":uid", article.uid ) ]) ] [ text "Update" ]
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Delete article [ ( ":uid", article.uid ) ]) ] [ text "Delete" ]
+        [ text todo.title
+        , Html.button
+            [ onClick
+                (JsonApiMsg <|
+                    JsonApi.Put todo
+                        [ ( ":uid", todo.uid ) ]
+                )
+            ]
+            [ text "Update" ]
+        , Html.button
+            [ onClick
+                (JsonApiMsg <|
+                    JsonApi.Delete todo
+                        [ ( ":uid", todo.uid ) ]
+                )
+            ]
+            [ text "Delete" ]
         ]
 
 
@@ -85,4 +99,4 @@ view model =
         [ Html.button [ onClick (JsonApiMsg <| JsonApi.GetIndex []) ] [ text "Load Todos" ]
         , Html.button [ onClick (JsonApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
         ]
-            ++ (List.map articleView model.articles.collection)
+            ++ (List.map todoView model.todos.collection)
