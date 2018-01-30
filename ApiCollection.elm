@@ -11,6 +11,7 @@ type alias Model =
     , error : Maybe Error
     , decoder : Decoder Article
     , encoder : Article -> Encode.Value
+    , idAccessor : Article -> Int
     }
 
 
@@ -107,13 +108,13 @@ postArticle model article =
 
 putArticle : Model -> Article -> Cmd Msg
 putArticle model article =
-    put (putArticleUrl article.id) (Http.jsonBody <| model.encoder article) model.decoder
+    put (putArticleUrl <| model.idAccessor article) (Http.jsonBody <| model.encoder article) model.decoder
         |> Http.send PutArticleResponse
 
 
 deleteArticle : Model -> Article -> Cmd Msg
 deleteArticle model article =
-    delete (deleteArticleUrl article.id) (Http.jsonBody <| model.encoder article) model.decoder
+    delete (deleteArticleUrl <| model.idAccessor article) (Http.jsonBody <| model.encoder article) model.decoder
         |> Http.send DeleteArticleResponse
 
 
