@@ -6,6 +6,7 @@ module JsonApi
         , update
         )
 
+import CustomRequests
 import UrlSubstitution exposing (UrlSubstitutions)
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
@@ -160,7 +161,7 @@ patch collection urlSubstitutions resource =
             collection.urls.patch
                 |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
-        patchRequest
+        CustomRequests.patchRequest
             url
             (Http.jsonBody <| collection.encoder resource)
             collection.decoder
@@ -174,40 +175,8 @@ delete collection urlSubstitutions resource =
             collection.urls.delete
                 |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
-        deleteRequest
+        CustomRequests.deleteRequest
             url
             (Http.jsonBody <| collection.encoder resource)
             collection.decoder
             |> Http.send DeleteResponse
-
-
-patchRequest : String -> Http.Body -> Decoder a -> Http.Request a
-patchRequest url body decoder =
-    Http.request
-        { method = "PATCH"
-        , headers =
-            [ Http.header "Accept" "application/json"
-            , Http.header "Content-type" "application/json"
-            ]
-        , url = url
-        , body = body
-        , expect = Http.expectJson decoder
-        , timeout = Nothing
-        , withCredentials = False
-        }
-
-
-deleteRequest : String -> Http.Body -> Decoder a -> Http.Request a
-deleteRequest url body decoder =
-    Http.request
-        { method = "DELETE"
-        , headers =
-            [ Http.header "Accept" "application/json"
-            , Http.header "Content-type" "application/json"
-            ]
-        , url = url
-        , body = body
-        , expect = Http.expectJson decoder
-        , timeout = Nothing
-        , withCredentials = False
-        }
