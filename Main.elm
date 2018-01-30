@@ -22,18 +22,18 @@ main =
 
 
 type Msg
-    = JsonApiMsg (JsonApi.Msg Todo)
+    = TodoApiMsg (JsonApi.Msg Todo)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        JsonApiMsg apiMsg ->
+        TodoApiMsg apiMsg ->
             let
                 ( updatedTodos, newCmd ) =
                     JsonApi.update apiMsg model.todos
             in
-                ( { model | todos = updatedTodos }, Cmd.map JsonApiMsg newCmd )
+                ( { model | todos = updatedTodos }, Cmd.map TodoApiMsg newCmd )
 
 
 subscriptions : Model -> Sub Msg
@@ -47,14 +47,14 @@ init =
         urls =
             { getIndex = "http://todo-backend-sinatra.herokuapp.com/todos"
             , post = "http://todo-backend-sinatra.herokuapp.com/todos"
-            , put = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
+            , patch = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
             , delete = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
             }
 
         initialModel =
             { todos = JsonApi.initCollection todoDecoder encodeTodo .uid urls }
     in
-        update (JsonApiMsg <| JsonApi.GetIndex []) initialModel
+        update (TodoApiMsg <| JsonApi.GetIndex []) initialModel
 
 
 newTodo : Todo
@@ -66,21 +66,26 @@ newTodo =
     }
 
 
+withCompleted : x -> { a | completed : x } -> { a | completed : x }
+withCompleted newVal record =
+    { record | completed = newVal }
+
+
 todoView : Todo -> Html Msg
 todoView todo =
     div []
         [ text todo.title
         , Html.button
             [ onClick
-                (JsonApiMsg <|
-                    JsonApi.Put todo
+                (TodoApiMsg <|
+                    JsonApi.Patch (withCompleted True todo)
                         [ ( ":uid", todo.uid ) ]
                 )
             ]
-            [ text "Update" ]
+            [ text "Mark Completed" ]
         , Html.button
             [ onClick
-                (JsonApiMsg <|
+                (TodoApiMsg <|
                     JsonApi.Delete todo
                         [ ( ":uid", todo.uid ) ]
                 )
@@ -92,7 +97,6 @@ todoView todo =
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (JsonApiMsg <| JsonApi.GetIndex []) ] [ text "Load Todos" ]
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
+        [ Html.button [ onClick (TodoApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
         ]
             ++ (List.map todoView model.todos.resources)

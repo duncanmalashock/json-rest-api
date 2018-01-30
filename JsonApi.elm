@@ -4,7 +4,7 @@ module JsonApi
         , Msg
             ( GetIndex
             , Post
-            , Put
+            , Patch
             , Delete
             )
         , initCollection
@@ -31,7 +31,7 @@ type alias Collection resource =
 type alias Urls =
     { getIndex : String
     , post : String
-    , put : String
+    , patch : String
     , delete : String
     }
 
@@ -56,8 +56,8 @@ type Msg resource
     | GetIndexResponse (Result Error (List resource))
     | Post resource UrlSubstitutions
     | PostResponse (Result Error resource)
-    | Put resource UrlSubstitutions
-    | PutResponse (Result Error resource)
+    | Patch resource UrlSubstitutions
+    | PatchResponse (Result Error resource)
     | Delete resource UrlSubstitutions
     | DeleteResponse (Result Error resource)
 
@@ -105,10 +105,10 @@ update msg collection =
                     , Cmd.none
                     )
 
-        Put resource urlSubstitutions ->
-            ( collection, put collection urlSubstitutions resource )
+        Patch resource urlSubstitutions ->
+            ( collection, patch collection urlSubstitutions resource )
 
-        PutResponse result ->
+        PatchResponse result ->
             case result of
                 Ok value ->
                     ( collection, Cmd.none )
@@ -183,18 +183,18 @@ post collection urlSubstitutions resource =
             |> Http.send PostResponse
 
 
-put : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
-put collection urlSubstitutions resource =
+patch : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+patch collection urlSubstitutions resource =
     let
         url =
-            collection.urls.put
+            collection.urls.patch
                 |> doUrlSubstitutions urlSubstitutions
     in
-        putRequest
+        patchRequest
             url
             (Http.jsonBody <| collection.encoder resource)
             collection.decoder
-            |> Http.send PutResponse
+            |> Http.send PatchResponse
 
 
 delete : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
@@ -211,10 +211,10 @@ delete collection urlSubstitutions resource =
             |> Http.send DeleteResponse
 
 
-putRequest : String -> Http.Body -> Decoder a -> Http.Request a
-putRequest url body decoder =
+patchRequest : String -> Http.Body -> Decoder a -> Http.Request a
+patchRequest url body decoder =
     Http.request
-        { method = "PUT"
+        { method = "PATCH"
         , headers =
             [ Http.header "Accept" "application/json"
             , Http.header "Content-type" "application/json"
