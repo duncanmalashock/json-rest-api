@@ -44,7 +44,7 @@ subscriptions model =
 init : ( Model, Cmd Msg )
 init =
     ( { todos =
-            { collection = []
+            { resources = []
             , error = Nothing
             , decoder = todoDecoder
             , encoder = encodeTodo
@@ -99,4 +99,4 @@ view model =
         [ Html.button [ onClick (JsonApiMsg <| JsonApi.GetIndex []) ] [ text "Load Todos" ]
         , Html.button [ onClick (JsonApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
         ]
-            ++ (List.map todoView model.todos.collection)
+            ++ (List.map todoView model.todos.resources)

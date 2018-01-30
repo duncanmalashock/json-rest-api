@@ -18,7 +18,7 @@ import Regex
 
 
 type alias Collection resource =
-    { collection : List resource
+    { resources : List resource
     , error : Maybe Error
     , decoder : Decoder resource
     , encoder : resource -> Encode.Value
@@ -60,7 +60,7 @@ update msg collection =
             case result of
                 Ok value ->
                     ( { collection
-                        | collection = value
+                        | resources = value
                         , error = Nothing
                       }
                     , Cmd.none
@@ -80,7 +80,7 @@ update msg collection =
             case result of
                 Ok value ->
                     ( { collection
-                        | collection = value :: collection.collection
+                        | resources = value :: collection.resources
                         , error = Nothing
                       }
                     , Cmd.none
