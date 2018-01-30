@@ -1,4 +1,14 @@
-module JsonApi exposing (Collection, Msg(..), update)
+module JsonApi
+    exposing
+        ( Collection
+        , Msg
+            ( GetIndex
+            , Post
+            , Put
+            , Delete
+            )
+        , update
+        )
 
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
@@ -41,15 +51,15 @@ type Msg resource
 
 
 update : Msg resource -> Collection resource -> ( Collection resource, Cmd (Msg resource) )
-update msg model =
+update msg collection =
     case msg of
         GetIndex urlSubstitutions ->
-            ( model, getIndex model urlSubstitutions )
+            ( collection, getIndex collection urlSubstitutions )
 
         GetIndexResponse result ->
             case result of
                 Ok value ->
-                    ( { model
+                    ( { collection
                         | collection = value
                         , error = Nothing
                       }
@@ -57,57 +67,57 @@ update msg model =
                     )
 
                 Err error ->
-                    ( { model
+                    ( { collection
                         | error = Just error
                       }
                     , Cmd.none
                     )
 
         Post resource urlSubstitutions ->
-            ( model, post model urlSubstitutions resource )
+            ( collection, post collection urlSubstitutions resource )
 
         PostResponse result ->
             case result of
                 Ok value ->
-                    ( { model
-                        | collection = value :: model.collection
+                    ( { collection
+                        | collection = value :: collection.collection
                         , error = Nothing
                       }
                     , Cmd.none
                     )
 
                 Err error ->
-                    ( { model
+                    ( { collection
                         | error = Just error
                       }
                     , Cmd.none
                     )
 
         Put resource urlSubstitutions ->
-            ( model, put model urlSubstitutions resource )
+            ( collection, put collection urlSubstitutions resource )
 
         PutResponse result ->
             case result of
                 Ok value ->
-                    ( model, Cmd.none )
+                    ( collection, Cmd.none )
 
                 Err error ->
-                    ( { model
+                    ( { collection
                         | error = Just error
                       }
                     , Cmd.none
                     )
 
         Delete resource urlSubstitutions ->
-            ( model, delete model urlSubstitutions resource )
+            ( collection, delete collection urlSubstitutions resource )
 
         DeleteResponse result ->
             case result of
                 Ok value ->
-                    ( model, Cmd.none )
+                    ( collection, Cmd.none )
 
                 Err error ->
-                    ( { model
+                    ( { collection
                         | error = Just error
                       }
                     , Cmd.none
@@ -135,57 +145,57 @@ doUrlSubstitutions urlSubstitutions url =
 
 
 getIndex : Collection resource -> UrlSubstitutions -> Cmd (Msg resource)
-getIndex model urlSubstitutions =
+getIndex collection urlSubstitutions =
     let
         url =
-            model.urls.getIndex
+            collection.urls.getIndex
                 |> doUrlSubstitutions urlSubstitutions
     in
         Http.get
             url
-            (Decode.list model.decoder)
+            (Decode.list collection.decoder)
             |> Http.send GetIndexResponse
 
 
 post : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
-post model urlSubstitutions resource =
+post collection urlSubstitutions resource =
     let
         url =
-            model.urls.post
+            collection.urls.post
                 |> doUrlSubstitutions urlSubstitutions
     in
         Http.post
             url
-            (Http.jsonBody <| model.encoder resource)
-            model.decoder
+            (Http.jsonBody <| collection.encoder resource)
+            collection.decoder
             |> Http.send PostResponse
 
 
 put : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
-put model urlSubstitutions resource =
+put collection urlSubstitutions resource =
     let
         url =
-            model.urls.put
+            collection.urls.put
                 |> doUrlSubstitutions urlSubstitutions
     in
         putRequest
             url
-            (Http.jsonBody <| model.encoder resource)
-            model.decoder
+            (Http.jsonBody <| collection.encoder resource)
+            collection.decoder
             |> Http.send PutResponse
 
 
 delete : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
-delete model urlSubstitutions resource =
+delete collection urlSubstitutions resource =
     let
         url =
-            model.urls.delete
+            collection.urls.delete
                 |> doUrlSubstitutions urlSubstitutions
     in
         deleteRequest
             url
-            (Http.jsonBody <| model.encoder resource)
-            model.decoder
+            (Http.jsonBody <| collection.encoder resource)
+            collection.decoder
             |> Http.send DeleteResponse
 
 
