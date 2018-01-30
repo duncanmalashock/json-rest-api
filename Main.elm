@@ -3,11 +3,11 @@ module Main exposing (..)
 import JsonApi
 import Html exposing (Html, div, text)
 import Html.Events exposing (onClick)
-import Article exposing (Article, articleDecoder, encodeArticle)
+import Todo exposing (Todo, todoDecoder, encodeTodo)
 
 
 type alias Model =
-    { articles : JsonApi.Collection Article
+    { articles : JsonApi.Collection Todo
     }
 
 
@@ -22,7 +22,7 @@ main =
 
 
 type Msg
-    = JsonApiMsg (JsonApi.Msg Article)
+    = JsonApiMsg (JsonApi.Msg Todo)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -30,10 +30,10 @@ update msg model =
     case msg of
         JsonApiMsg apiMsg ->
             let
-                ( updatedArticles, newCmd ) =
+                ( updatedTodos, newCmd ) =
                     JsonApi.update apiMsg model.articles
             in
-                ( { model | articles = updatedArticles }, Cmd.map JsonApiMsg newCmd )
+                ( { model | articles = updatedTodos }, Cmd.map JsonApiMsg newCmd )
 
 
 subscriptions : Model -> Sub Msg
@@ -46,14 +46,14 @@ init =
     ( { articles =
             { collection = []
             , error = Nothing
-            , decoder = articleDecoder
-            , encoder = encodeArticle
-            , idAccessor = .id
+            , decoder = todoDecoder
+            , encoder = encodeTodo
+            , idAccessor = .uid
             , urls =
-                { getIndex = "https://jsonplaceholder.typicode.com/posts"
-                , post = "https://jsonplaceholder.typicode.com/posts"
-                , put = "https://jsonplaceholder.typicode.com/posts/:id"
-                , delete = "https://jsonplaceholder.typicode.com/posts/:id"
+                { getIndex = "http://todo-backend-sinatra.herokuapp.com/todos"
+                , post = "http://todo-backend-sinatra.herokuapp.com/todos"
+                , put = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
+                , delete = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
                 }
             }
       }
@@ -61,28 +61,28 @@ init =
     )
 
 
-newArticle : Article
-newArticle =
-    { id = -1
+newTodo : Todo
+newTodo =
+    { uid = ""
     , title = "Blah!"
-    , body = "Lorem ipsum"
-    , userId = 0
+    , order = 0
+    , completed = False
     }
 
 
-articleView : Article -> Html Msg
+articleView : Todo -> Html Msg
 articleView article =
     div []
         [ text article.title
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Put article [ ( ":id", toString article.id ) ]) ] [ text "Update" ]
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Delete article [ ( ":id", toString article.id ) ]) ] [ text "Delete" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Put article [ ( ":uid", article.uid ) ]) ] [ text "Update" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Delete article [ ( ":uid", article.uid ) ]) ] [ text "Delete" ]
         ]
 
 
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (JsonApiMsg <| JsonApi.GetIndex []) ] [ text "Load Articles" ]
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Post newArticle []) ] [ text "Save New Article" ]
+        [ Html.button [ onClick (JsonApiMsg <| JsonApi.GetIndex []) ] [ text "Load Todos" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
         ]
             ++ (List.map articleView model.articles.collection)

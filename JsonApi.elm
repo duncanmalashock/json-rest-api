@@ -12,7 +12,7 @@ type alias Collection resource =
     , error : Maybe Error
     , decoder : Decoder resource
     , encoder : resource -> Encode.Value
-    , idAccessor : resource -> Int
+    , idAccessor : resource -> String
     , urls : Urls
     }
 
