@@ -8,9 +8,10 @@ module JsonApi
 
 import CustomRequests
 import UrlSubstitution exposing (UrlSubstitutions)
-import Http exposing (Error)
+import List.Extra
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Http exposing (Error)
 
 
 type alias Collection resource =
@@ -69,16 +70,33 @@ update msg collection =
             ( collection, delete collection urlSubstitutions resource )
 
         GetIndexResponse result ->
-            handleListResponse result (\newList _ -> newList) collection
+            handleListResponse result
+                (\newList _ -> newList)
+                collection
 
         PostResponse result ->
-            handleSingleResponse result (\newResource _ list -> newResource :: list) collection
+            handleSingleResponse result
+                (\newResource _ list -> newResource :: list)
+                collection
 
         PatchResponse result ->
-            handleSingleResponse result (\newResource idAccessor list -> list) collection
+            handleSingleResponse result
+                (\newResource idAccessor list ->
+                    List.Extra.replaceIf
+                        (\item -> (idAccessor item) == (idAccessor newResource))
+                        newResource
+                        list
+                )
+                collection
 
         DeleteResponse result ->
-            handleSingleResponse result (\newResource idAccessor list -> list) collection
+            handleSingleResponse result
+                (\newResource idAccessor list ->
+                    List.filter
+                        (\item -> (idAccessor item) == (idAccessor newResource))
+                        list
+                )
+                collection
 
 
 handleListResponse :
