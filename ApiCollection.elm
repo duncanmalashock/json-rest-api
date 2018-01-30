@@ -1,4 +1,4 @@
-module ApiCollection exposing (..)
+module ApiCollection exposing (Model, Msg(..), update)
 
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
