@@ -2,12 +2,15 @@ module ApiCollection exposing (..)
 
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
 import Article exposing (Article, articleDecoder, encodeArticle)
 
 
 type alias Model =
     { collection : List Article
     , error : Maybe Error
+    , decoder : Decoder Article
+    , encoder : Article -> Encode.Value
     }
 
 
@@ -26,7 +29,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetArticleIndex ->
-            ( model, getArticleIndex )
+            ( model, getArticleIndex model )
 
         GetArticleIndexResponse result ->
             case result of
@@ -37,7 +40,7 @@ update msg model =
                     ( { model | error = Just error }, Cmd.none )
 
         PostArticle article ->
-            ( model, postArticle article )
+            ( model, postArticle model article )
 
         PostArticleResponse result ->
             case result of
@@ -48,7 +51,7 @@ update msg model =
                     ( { model | error = Just error }, Cmd.none )
 
         PutArticle article ->
-            ( model, putArticle article )
+            ( model, putArticle model article )
 
         PutArticleResponse result ->
             case result of
@@ -59,7 +62,7 @@ update msg model =
                     ( { model | error = Just error }, Cmd.none )
 
         DeleteArticle article ->
-            ( model, deleteArticle article )
+            ( model, deleteArticle model article )
 
         DeleteArticleResponse result ->
             case result of
@@ -90,27 +93,27 @@ deleteArticleUrl id =
     "https://jsonplaceholder.typicode.com/posts/" ++ toString id
 
 
-getArticleIndex : Cmd Msg
-getArticleIndex =
-    Http.get getArticleIndexUrl (Decode.list articleDecoder)
+getArticleIndex : Model -> Cmd Msg
+getArticleIndex model =
+    Http.get getArticleIndexUrl (Decode.list model.decoder)
         |> Http.send GetArticleIndexResponse
 
 
-postArticle : Article -> Cmd Msg
-postArticle article =
-    Http.post postArticleUrl (Http.jsonBody <| encodeArticle article) articleDecoder
+postArticle : Model -> Article -> Cmd Msg
+postArticle model article =
+    Http.post postArticleUrl (Http.jsonBody <| model.encoder article) model.decoder
         |> Http.send PostArticleResponse
 
 
-putArticle : Article -> Cmd Msg
-putArticle article =
-    put (putArticleUrl article.id) (Http.jsonBody <| encodeArticle article) articleDecoder
+putArticle : Model -> Article -> Cmd Msg
+putArticle model article =
+    put (putArticleUrl article.id) (Http.jsonBody <| model.encoder article) model.decoder
         |> Http.send PutArticleResponse
 
 
-deleteArticle : Article -> Cmd Msg
-deleteArticle article =
-    delete (deleteArticleUrl article.id) (Http.jsonBody <| encodeArticle article) articleDecoder
+deleteArticle : Model -> Article -> Cmd Msg
+deleteArticle model article =
+    delete (deleteArticleUrl article.id) (Http.jsonBody <| model.encoder article) model.decoder
         |> Http.send DeleteArticleResponse
 
 

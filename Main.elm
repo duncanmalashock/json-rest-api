@@ -47,6 +47,8 @@ init =
     ( { articles =
             { collection = []
             , error = Nothing
+            , decoder = articleDecoder
+            , encoder = encodeArticle
             }
       }
     , Cmd.none
