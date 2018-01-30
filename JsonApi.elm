@@ -7,6 +7,7 @@ module JsonApi
             , Put
             , Delete
             )
+        , initCollection
         , update
         )
 
@@ -32,6 +33,17 @@ type alias Urls =
     , post : String
     , put : String
     , delete : String
+    }
+
+
+initCollection : Decoder resource -> (resource -> Encode.Value) -> (resource -> String) -> Urls -> Collection resource
+initCollection decoder encoder idAccessor urls =
+    { resources = []
+    , error = Nothing
+    , decoder = decoder
+    , encoder = encoder
+    , idAccessor = idAccessor
+    , urls = urls
     }
 
 

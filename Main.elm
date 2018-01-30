@@ -43,22 +43,18 @@ subscriptions model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { todos =
-            { resources = []
-            , error = Nothing
-            , decoder = todoDecoder
-            , encoder = encodeTodo
-            , idAccessor = .uid
-            , urls =
-                { getIndex = "http://todo-backend-sinatra.herokuapp.com/todos"
-                , post = "http://todo-backend-sinatra.herokuapp.com/todos"
-                , put = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
-                , delete = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
-                }
+    let
+        urls =
+            { getIndex = "http://todo-backend-sinatra.herokuapp.com/todos"
+            , post = "http://todo-backend-sinatra.herokuapp.com/todos"
+            , put = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
+            , delete = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
             }
-      }
-    , Cmd.none
-    )
+
+        initialModel =
+            { todos = JsonApi.initCollection todoDecoder encodeTodo .uid urls }
+    in
+        update (JsonApiMsg <| JsonApi.GetIndex []) initialModel
 
 
 newTodo : Todo
