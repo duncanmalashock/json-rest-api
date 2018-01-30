@@ -52,8 +52,8 @@ init =
             , urls =
                 { getIndex = "https://jsonplaceholder.typicode.com/posts"
                 , post = "https://jsonplaceholder.typicode.com/posts"
-                , put = "https://jsonplaceholder.typicode.com/posts/"
-                , delete = "https://jsonplaceholder.typicode.com/posts/"
+                , put = "https://jsonplaceholder.typicode.com/posts/:id"
+                , delete = "https://jsonplaceholder.typicode.com/posts/:id"
                 }
             }
       }
@@ -74,15 +74,15 @@ articleView : Article -> Html Msg
 articleView article =
     div []
         [ text article.title
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Put article) ] [ text "Update" ]
-        , Html.button [ onClick (JsonApiMsg <| JsonApi.Delete article) ] [ text "Delete" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Put article [ ( ":id", toString article.id ) ]) ] [ text "Update" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Delete article [ ( ":id", toString article.id ) ]) ] [ text "Delete" ]
         ]
 
 
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (JsonApiMsg JsonApi.GetIndex) ] [ text "Load Articles" ]
-        , Html.button [ onClick (JsonApiMsg (JsonApi.Post newArticle)) ] [ text "Save New Article" ]
+        [ Html.button [ onClick (JsonApiMsg <| JsonApi.GetIndex []) ] [ text "Load Articles" ]
+        , Html.button [ onClick (JsonApiMsg <| JsonApi.Post newArticle []) ] [ text "Save New Article" ]
         ]
             ++ (List.map articleView model.articles.collection)

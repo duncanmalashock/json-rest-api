@@ -3,6 +3,8 @@ module JsonApi exposing (Collection, Msg(..), update)
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Dict
+import Regex
 
 
 type alias Collection resource =
@@ -23,48 +25,66 @@ type alias Urls =
     }
 
 
+type alias UrlSubstitutions =
+    List ( String, String )
+
+
 type Msg resource
-    = GetIndex
+    = GetIndex UrlSubstitutions
     | GetIndexResponse (Result Error (List resource))
-    | Post resource
+    | Post resource UrlSubstitutions
     | PostResponse (Result Error resource)
-    | Put resource
+    | Put resource UrlSubstitutions
     | PutResponse (Result Error resource)
-    | Delete resource
+    | Delete resource UrlSubstitutions
     | DeleteResponse (Result Error resource)
 
 
 update : Msg resource -> Collection resource -> ( Collection resource, Cmd (Msg resource) )
 update msg model =
     case msg of
-        GetIndex ->
-            ( model, getIndex model )
+        GetIndex urlSubstitutions ->
+            ( model, getIndex model urlSubstitutions )
 
         GetIndexResponse result ->
             case result of
                 Ok value ->
-                    ( { model | collection = value }, Cmd.none )
+                    ( { model
+                        | collection = value
+                        , error = Nothing
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
-                    ( { model | error = Just error }, Cmd.none )
+                    ( { model
+                        | error = Just error
+                      }
+                    , Cmd.none
+                    )
 
-        Post article ->
-            ( model, post model article )
+        Post resource urlSubstitutions ->
+            ( model, post model urlSubstitutions resource )
 
         PostResponse result ->
             case result of
                 Ok value ->
                     ( { model
                         | collection = value :: model.collection
+                        , error = Nothing
                       }
                     , Cmd.none
                     )
 
                 Err error ->
-                    ( { model | error = Just error }, Cmd.none )
+                    ( { model
+                        | error = Just error
+                      }
+                    , Cmd.none
+                    )
 
-        Put article ->
-            ( model, put model article )
+        Put resource urlSubstitutions ->
+            ( model, put model urlSubstitutions resource )
 
         PutResponse result ->
             case result of
@@ -72,10 +92,14 @@ update msg model =
                     ( model, Cmd.none )
 
                 Err error ->
-                    ( { model | error = Just error }, Cmd.none )
+                    ( { model
+                        | error = Just error
+                      }
+                    , Cmd.none
+                    )
 
-        Delete article ->
-            ( model, delete model article )
+        Delete resource urlSubstitutions ->
+            ( model, delete model urlSubstitutions resource )
 
         DeleteResponse result ->
             case result of
@@ -83,50 +107,86 @@ update msg model =
                     ( model, Cmd.none )
 
                 Err error ->
-                    ( { model | error = Just error }, Cmd.none )
+                    ( { model
+                        | error = Just error
+                      }
+                    , Cmd.none
+                    )
 
 
-putUrl : Int -> String
-putUrl id =
-    "https://jsonplaceholder.typicode.com/posts/" ++ toString id
+urlSubstitutionRegex : Regex.Regex
+urlSubstitutionRegex =
+    Regex.regex ":[A-Za-z0-9_]+\\b"
 
 
-deleteUrl : Int -> String
-deleteUrl id =
-    "https://jsonplaceholder.typicode.com/posts/" ++ toString id
+doUrlSubstitutions : UrlSubstitutions -> String -> String
+doUrlSubstitutions urlSubstitutions url =
+    let
+        dictionary =
+            Dict.fromList urlSubstitutions
+    in
+        Regex.replace Regex.All
+            urlSubstitutionRegex
+            (\{ match } ->
+                Dict.get match dictionary
+                    |> Maybe.withDefault match
+            )
+            url
 
 
-getIndex : Collection resource -> Cmd (Msg resource)
-getIndex model =
-    Http.get model.urls.getIndex (Decode.list model.decoder)
-        |> Http.send GetIndexResponse
+getIndex : Collection resource -> UrlSubstitutions -> Cmd (Msg resource)
+getIndex model urlSubstitutions =
+    let
+        url =
+            model.urls.getIndex
+                |> doUrlSubstitutions urlSubstitutions
+    in
+        Http.get
+            url
+            (Decode.list model.decoder)
+            |> Http.send GetIndexResponse
 
 
-post : Collection resource -> resource -> Cmd (Msg resource)
-post model article =
-    Http.post
-        model.urls.post
-        (Http.jsonBody <| model.encoder article)
-        model.decoder
-        |> Http.send PostResponse
+post : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+post model urlSubstitutions resource =
+    let
+        url =
+            model.urls.post
+                |> doUrlSubstitutions urlSubstitutions
+    in
+        Http.post
+            url
+            (Http.jsonBody <| model.encoder resource)
+            model.decoder
+            |> Http.send PostResponse
 
 
-put : Collection resource -> resource -> Cmd (Msg resource)
-put model article =
-    putRequest
-        (putUrl <| model.idAccessor article)
-        (Http.jsonBody <| model.encoder article)
-        model.decoder
-        |> Http.send PutResponse
+put : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+put model urlSubstitutions resource =
+    let
+        url =
+            model.urls.put
+                |> doUrlSubstitutions urlSubstitutions
+    in
+        putRequest
+            url
+            (Http.jsonBody <| model.encoder resource)
+            model.decoder
+            |> Http.send PutResponse
 
 
-delete : Collection resource -> resource -> Cmd (Msg resource)
-delete model article =
-    deleteRequest
-        (deleteUrl <| model.idAccessor article)
-        (Http.jsonBody <| model.encoder article)
-        model.decoder
-        |> Http.send DeleteResponse
+delete : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+delete model urlSubstitutions resource =
+    let
+        url =
+            model.urls.delete
+                |> doUrlSubstitutions urlSubstitutions
+    in
+        deleteRequest
+            url
+            (Http.jsonBody <| model.encoder resource)
+            model.decoder
+            |> Http.send DeleteResponse
 
 
 putRequest : String -> Http.Body -> Decoder a -> Http.Request a
