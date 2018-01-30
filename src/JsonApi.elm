@@ -1,21 +1,15 @@
 module JsonApi
     exposing
         ( Collection
-        , Msg
-            ( GetIndex
-            , Post
-            , Patch
-            , Delete
-            )
+        , Msg(..)
         , initCollection
         , update
         )
 
+import UrlSubstitution exposing (UrlSubstitutions)
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Dict
-import Regex
 
 
 type alias Collection resource =
@@ -47,18 +41,14 @@ initCollection decoder encoder idAccessor urls =
     }
 
 
-type alias UrlSubstitutions =
-    List ( String, String )
-
-
 type Msg resource
     = GetIndex UrlSubstitutions
-    | GetIndexResponse (Result Error (List resource))
     | Post resource UrlSubstitutions
-    | PostResponse (Result Error resource)
     | Patch resource UrlSubstitutions
-    | PatchResponse (Result Error resource)
     | Delete resource UrlSubstitutions
+    | GetIndexResponse (Result Error (List resource))
+    | PostResponse (Result Error resource)
+    | PatchResponse (Result Error resource)
     | DeleteResponse (Result Error resource)
 
 
@@ -67,6 +57,15 @@ update msg collection =
     case msg of
         GetIndex urlSubstitutions ->
             ( collection, getIndex collection urlSubstitutions )
+
+        Post resource urlSubstitutions ->
+            ( collection, post collection urlSubstitutions resource )
+
+        Patch resource urlSubstitutions ->
+            ( collection, patch collection urlSubstitutions resource )
+
+        Delete resource urlSubstitutions ->
+            ( collection, delete collection urlSubstitutions resource )
 
         GetIndexResponse result ->
             case result of
@@ -85,9 +84,6 @@ update msg collection =
                     , Cmd.none
                     )
 
-        Post resource urlSubstitutions ->
-            ( collection, post collection urlSubstitutions resource )
-
         PostResponse result ->
             case result of
                 Ok value ->
@@ -105,9 +101,6 @@ update msg collection =
                     , Cmd.none
                     )
 
-        Patch resource urlSubstitutions ->
-            ( collection, patch collection urlSubstitutions resource )
-
         PatchResponse result ->
             case result of
                 Ok value ->
@@ -119,9 +112,6 @@ update msg collection =
                       }
                     , Cmd.none
                     )
-
-        Delete resource urlSubstitutions ->
-            ( collection, delete collection urlSubstitutions resource )
 
         DeleteResponse result ->
             case result of
@@ -136,32 +126,12 @@ update msg collection =
                     )
 
 
-urlSubstitutionRegex : Regex.Regex
-urlSubstitutionRegex =
-    Regex.regex ":[A-Za-z0-9_]+\\b"
-
-
-doUrlSubstitutions : UrlSubstitutions -> String -> String
-doUrlSubstitutions urlSubstitutions url =
-    let
-        dictionary =
-            Dict.fromList urlSubstitutions
-    in
-        Regex.replace Regex.All
-            urlSubstitutionRegex
-            (\{ match } ->
-                Dict.get match dictionary
-                    |> Maybe.withDefault match
-            )
-            url
-
-
 getIndex : Collection resource -> UrlSubstitutions -> Cmd (Msg resource)
 getIndex collection urlSubstitutions =
     let
         url =
             collection.urls.getIndex
-                |> doUrlSubstitutions urlSubstitutions
+                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
         Http.get
             url
@@ -174,7 +144,7 @@ post collection urlSubstitutions resource =
     let
         url =
             collection.urls.post
-                |> doUrlSubstitutions urlSubstitutions
+                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
         Http.post
             url
@@ -188,7 +158,7 @@ patch collection urlSubstitutions resource =
     let
         url =
             collection.urls.patch
-                |> doUrlSubstitutions urlSubstitutions
+                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
         patchRequest
             url
@@ -202,7 +172,7 @@ delete collection urlSubstitutions resource =
     let
         url =
             collection.urls.delete
-                |> doUrlSubstitutions urlSubstitutions
+                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
         deleteRequest
             url
