@@ -1,7 +1,6 @@
 module Main exposing (..)
 
 import ApiCollection exposing (Msg(..))
-import Article exposing (Article)
 import Html exposing (Html, div, text)
 import Html.Events exposing (onClick)
 import Article exposing (Article, articleDecoder, encodeArticle)
