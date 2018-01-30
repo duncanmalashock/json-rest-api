@@ -3,7 +3,8 @@ module Main exposing (..)
 import Todo exposing (Todo, todoDecoder, encodeTodo)
 import JsonApi
 import RemoteData
-import Html exposing (Html, div, text)
+import Html exposing (Html, div, span, text)
+import Html.Attributes
 import Html.Events exposing (onClick)
 
 
@@ -74,25 +75,37 @@ withCompleted newVal record =
 
 todoView : Todo -> Html Msg
 todoView todo =
-    div []
-        [ text todo.title
-        , Html.button
-            [ onClick
-                (TodoApiMsg <|
-                    JsonApi.Patch (withCompleted True todo)
-                        [ ( ":uid", todo.uid ) ]
-                )
+    let
+        attrs =
+            case todo.completed of
+                True ->
+                    [ Html.Attributes.style
+                        [ ( "textDecoration", "line-through" ) ]
+                    ]
+
+                False ->
+                    []
+    in
+        div []
+            [ span attrs
+                [ text todo.title ]
+            , Html.button
+                [ onClick
+                    (TodoApiMsg <|
+                        JsonApi.Patch (withCompleted True todo)
+                            [ ( ":uid", todo.uid ) ]
+                    )
+                ]
+                [ text "Mark Completed" ]
+            , Html.button
+                [ onClick
+                    (TodoApiMsg <|
+                        JsonApi.Delete todo
+                            [ ( ":uid", todo.uid ) ]
+                    )
+                ]
+                [ text "Delete" ]
             ]
-            [ text "Mark Completed" ]
-        , Html.button
-            [ onClick
-                (TodoApiMsg <|
-                    JsonApi.Delete todo
-                        [ ( ":uid", todo.uid ) ]
-                )
-            ]
-            [ text "Delete" ]
-        ]
 
 
 view : Model -> Html Msg
