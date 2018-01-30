@@ -6,7 +6,7 @@ module JsonApi
         , update
         )
 
-import CustomRequests
+import Request
 import UrlSubstitution exposing (UrlSubstitutions)
 import RemoteData exposing (RemoteData)
 import List.Extra
@@ -153,8 +153,9 @@ getIndex collection urlSubstitutions =
             collection.urls.getIndex
                 |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
-        Http.get
+        Request.get
             url
+            Http.emptyBody
             (Decode.list collection.decoder)
             |> Http.send GetIndexResponse
 
@@ -166,7 +167,7 @@ post collection urlSubstitutions resource =
             collection.urls.post
                 |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
-        Http.post
+        Request.post
             url
             (Http.jsonBody <| collection.encoder resource)
             collection.decoder
@@ -180,7 +181,7 @@ patch collection urlSubstitutions resource =
             collection.urls.patch
                 |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
-        CustomRequests.patchRequest
+        Request.patch
             url
             (Http.jsonBody <| collection.encoder resource)
             collection.decoder
@@ -194,7 +195,7 @@ delete collection urlSubstitutions resource =
             collection.urls.delete
                 |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
     in
-        CustomRequests.deleteRequest
+        Request.delete
             url
             (Http.jsonBody <| collection.encoder resource)
             collection.decoder

@@ -1,16 +1,26 @@
-module CustomRequests exposing (patchRequest, deleteRequest)
+module Request exposing (get, post, patch, delete)
 
 import Http exposing (Error)
 import Json.Decode as Decode exposing (Decoder)
 
 
-patchRequest : String -> Http.Body -> Decoder a -> Http.Request a
-patchRequest =
+get : String -> Http.Body -> Decoder a -> Http.Request a
+get =
+    standardRequest "GET"
+
+
+post : String -> Http.Body -> Decoder a -> Http.Request a
+post =
+    standardRequest "POST"
+
+
+patch : String -> Http.Body -> Decoder a -> Http.Request a
+patch =
     standardRequest "PATCH"
 
 
-deleteRequest : String -> Http.Body -> Decoder a -> Http.Request a
-deleteRequest =
+delete : String -> Http.Body -> Decoder a -> Http.Request a
+delete =
     standardRequest "DELETE"
 
 
