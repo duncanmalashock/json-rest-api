@@ -1,8 +1,8 @@
 module JsonApi
     exposing
-        ( Collection
+        ( Api
         , Msg(..)
-        , initCollection
+        , initApi
         , update
         )
 
@@ -15,32 +15,30 @@ import Json.Encode as Encode
 import Http exposing (Error)
 
 
-type alias Collection resource =
-    { resources : RemoteData Error (List resource)
+type alias Webdata a =
+    RemoteData Error a
+
+
+type alias Api resource id =
+    { resources : Webdata (List resource)
     , error : Maybe Error
     , decoder : Decoder resource
     , encoder : resource -> Encode.Value
-    , idAccessor : resource -> String
-    , urls : Urls
+    , id : resource -> id
+    , baseUrl : String
+    , toSuffix : id -> String
     }
 
 
-type alias Urls =
-    { getIndex : String
-    , post : String
-    , patch : String
-    , delete : String
-    }
-
-
-initCollection : Decoder resource -> (resource -> Encode.Value) -> (resource -> String) -> Urls -> Collection resource
-initCollection decoder encoder idAccessor urls =
+initApi : Decoder resource -> (resource -> Encode.Value) -> (resource -> id) -> String -> (id -> String) -> Api resource id
+initApi decoder encoder id baseUrl toSuffix =
     { resources = RemoteData.NotAsked
     , error = Nothing
     , decoder = decoder
     , encoder = encoder
-    , idAccessor = idAccessor
-    , urls = urls
+    , id = id
+    , baseUrl = baseUrl
+    , toSuffix = toSuffix
     }
 
 
@@ -55,7 +53,7 @@ type Msg resource
     | DeleteResponse (Result Error resource)
 
 
-update : Msg resource -> Collection resource -> ( Collection resource, Cmd (Msg resource) )
+update : Msg resource -> Api resource id -> ( Api resource id, Cmd (Msg resource) )
 update msg collection =
     case msg of
         GetIndex urlSubstitutions ->
@@ -103,8 +101,8 @@ update msg collection =
 handleListResponse :
     Result Error (List resource)
     -> (List resource -> List resource -> List resource)
-    -> Collection resource
-    -> ( Collection resource, Cmd (Msg resource) )
+    -> Api resource id
+    -> ( Api resource id, Cmd (Msg resource) )
 handleListResponse result updateFn collection =
     case result of
         Ok value ->
@@ -126,13 +124,13 @@ handleListResponse result updateFn collection =
 handleSingleResponse :
     Result Error resource
     -> (resource -> (resource -> String) -> List resource -> List resource)
-    -> Collection resource
-    -> ( Collection resource, Cmd (Msg resource) )
+    -> Api resource id
+    -> ( Api resource id, Cmd (Msg resource) )
 handleSingleResponse result updateFn collection =
     case result of
         Ok value ->
             ( { collection
-                | resources = RemoteData.map (updateFn value collection.idAccessor) collection.resources
+                | resources = RemoteData.map (updateFn value (collection.id >> toString)) collection.resources
                 , error = Nothing
               }
             , Cmd.none
@@ -146,56 +144,36 @@ handleSingleResponse result updateFn collection =
             )
 
 
-getIndex : Collection resource -> UrlSubstitutions -> Cmd (Msg resource)
+getIndex : Api resource id -> UrlSubstitutions -> Cmd (Msg resource)
 getIndex collection urlSubstitutions =
-    let
-        url =
-            collection.urls.getIndex
-                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
-    in
-        Request.get
-            url
-            (Decode.list collection.decoder)
-            |> Http.send GetIndexResponse
+    Request.get
+        collection.baseUrl
+        (Decode.list collection.decoder)
+        |> Http.send GetIndexResponse
 
 
-post : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+post : Api resource id -> UrlSubstitutions -> resource -> Cmd (Msg resource)
 post collection urlSubstitutions resource =
-    let
-        url =
-            collection.urls.post
-                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
-    in
-        Request.post
-            url
-            (Http.jsonBody <| collection.encoder resource)
-            collection.decoder
-            |> Http.send PostResponse
+    Request.post
+        collection.baseUrl
+        (Http.jsonBody <| collection.encoder resource)
+        collection.decoder
+        |> Http.send PostResponse
 
 
-patch : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+patch : Api resource id -> UrlSubstitutions -> resource -> Cmd (Msg resource)
 patch collection urlSubstitutions resource =
-    let
-        url =
-            collection.urls.patch
-                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
-    in
-        Request.patch
-            url
-            (Http.jsonBody <| collection.encoder resource)
-            collection.decoder
-            |> Http.send PatchResponse
+    Request.patch
+        collection.baseUrl
+        (Http.jsonBody <| collection.encoder resource)
+        collection.decoder
+        |> Http.send PatchResponse
 
 
-delete : Collection resource -> UrlSubstitutions -> resource -> Cmd (Msg resource)
+delete : Api resource id -> UrlSubstitutions -> resource -> Cmd (Msg resource)
 delete collection urlSubstitutions resource =
-    let
-        url =
-            collection.urls.delete
-                |> UrlSubstitution.doUrlSubstitutions urlSubstitutions
-    in
-        Request.delete
-            url
-            (Http.jsonBody <| collection.encoder resource)
-            collection.decoder
-            |> Http.send DeleteResponse
+    Request.delete
+        collection.baseUrl
+        (Http.jsonBody <| collection.encoder resource)
+        collection.decoder
+        |> Http.send DeleteResponse
