@@ -18,10 +18,12 @@ type alias Model =
 todoApi : Request.Config Todo String
 todoApi =
     Request.initConfig
-        todoDecoder
-        encodeTodo
-        "http://todo-backend-sinatra.herokuapp.com/todos"
-        (\id -> "/" ++ id)
+        { decoder = todoDecoder
+        , encoder = encodeTodo
+        , baseUrl = "http://todo-backend-sinatra.herokuapp.com/todos"
+        , toSuffix = (\id -> "/" ++ id)
+        }
+        |> Request.usePatchForUpdate
 
 
 main : Program Never Model Msg

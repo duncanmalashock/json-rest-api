@@ -2,7 +2,7 @@ module JsonApi.Request
     exposing
         ( Config
         , initConfig
-        , setUpdateVerb
+        , usePatchForUpdate
         , getAll
         , create
         , update
@@ -19,29 +19,14 @@ type alias Config resource urlData =
     , encoder : resource -> Encode.Value
     , baseUrl : String
     , toSuffix : urlData -> String
-    , verbs : Verbs
+    , updateVerb : Verb
     }
 
 
-setUpdateVerb : Verb -> Config resource urlData -> Config resource urlData
-setUpdateVerb newVerb config =
-    let
-        verbs =
-            config.verbs
-    in
-        { config
-            | verbs =
-                { verbs
-                    | update = newVerb
-                }
-        }
-
-
-type alias Verbs =
-    { getAll : Verb
-    , create : Verb
-    , update : Verb
-    , delete : Verb
+usePatchForUpdate : Config resource urlData -> Config resource urlData
+usePatchForUpdate config =
+    { config
+        | updateVerb = Patch
     }
 
 
@@ -72,25 +57,26 @@ verbToString verb =
             "DELETE"
 
 
-initConfig : Decoder resource -> (resource -> Encode.Value) -> String -> (urlData -> String) -> Config resource urlData
-initConfig decoder encoder baseUrl toSuffix =
-    { decoder = decoder
-    , encoder = encoder
-    , baseUrl = baseUrl
-    , toSuffix = toSuffix
-    , verbs =
-        { getAll = Get
-        , create = Post
-        , update = Patch
-        , delete = Delete
-        }
+initConfig :
+    { decoder : Decoder resource
+    , encoder : resource -> Encode.Value
+    , baseUrl : String
+    , toSuffix : urlData -> String
+    }
+    -> Config resource urlData
+initConfig configData =
+    { decoder = configData.decoder
+    , encoder = configData.encoder
+    , baseUrl = configData.baseUrl
+    , toSuffix = configData.toSuffix
+    , updateVerb = Put
     }
 
 
 getAll : Config resource urlData -> (Result Error (List resource) -> msg) -> Cmd msg
 getAll api responseMsg =
     standardRequest
-        (verbToString api.verbs.getAll)
+        (verbToString Get)
         api.baseUrl
         Http.emptyBody
         (Decode.list api.decoder)
@@ -100,7 +86,7 @@ getAll api responseMsg =
 create : Config resource urlData -> resource -> (Result Error resource -> msg) -> Cmd msg
 create api resource responseMsg =
     standardRequest
-        (verbToString api.verbs.create)
+        (verbToString Post)
         api.baseUrl
         (Http.jsonBody <| api.encoder resource)
         api.decoder
@@ -110,7 +96,7 @@ create api resource responseMsg =
 update : Config resource urlData -> resource -> urlData -> (Result Error resource -> msg) -> Cmd msg
 update api resource urlData responseMsg =
     standardRequest
-        (verbToString api.verbs.update)
+        (verbToString api.updateVerb)
         (api.baseUrl ++ (api.toSuffix urlData))
         (Http.jsonBody <| api.encoder resource)
         api.decoder
@@ -120,7 +106,7 @@ update api resource urlData responseMsg =
 delete : Config resource urlData -> resource -> urlData -> (Result Error resource -> msg) -> Cmd msg
 delete api resource urlData responseMsg =
     standardRequest
-        (verbToString api.verbs.delete)
+        (verbToString Delete)
         (api.baseUrl ++ (api.toSuffix urlData))
         (Http.jsonBody <| api.encoder resource)
         api.decoder
