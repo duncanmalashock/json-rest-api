@@ -32,10 +32,7 @@ setUpdateVerb newVerb config =
         { config
             | verbs =
                 { verbs
-                    | getAll = verbs.getAll
-                    , create = verbs.create
-                    , update = newVerb
-                    , delete = verbs.delete
+                    | update = newVerb
                 }
         }
 
