@@ -155,7 +155,6 @@ getIndex collection urlSubstitutions =
     in
         Request.get
             url
-            Http.emptyBody
             (Decode.list collection.decoder)
             |> Http.send GetIndexResponse
 
