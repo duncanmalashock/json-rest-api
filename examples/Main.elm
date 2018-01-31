@@ -1,16 +1,27 @@
 module Main exposing (..)
 
 import Todo exposing (Todo, todoDecoder, encodeTodo)
-import JsonApi
-import RemoteData
+import JsonApi.Request as Request
+import JsonApi.Response as Response
+import RemoteData exposing (RemoteData(..))
+import Http exposing (Error)
 import Html exposing (Html, div, span, text)
 import Html.Attributes
 import Html.Events exposing (onClick)
 
 
 type alias Model =
-    { todos : JsonApi.Collection Todo
+    { todos : RemoteData Error (List Todo)
     }
+
+
+todoApi : Request.Config Todo String
+todoApi =
+    Request.initConfig
+        todoDecoder
+        encodeTodo
+        "http://todo-backend-sinatra.herokuapp.com/todos"
+        (\id -> "/" ++ id)
 
 
 main : Program Never Model Msg
@@ -24,18 +35,47 @@ main =
 
 
 type Msg
-    = TodoApiMsg (JsonApi.Msg Todo)
+    = GetAllRequest
+    | CreateRequest Todo
+    | UpdateRequest Todo
+    | DeleteRequest Todo
+    | GetAllResponse (Result Error (List Todo))
+    | CreateResponse (Result Error Todo)
+    | UpdateResponse (Result Error Todo)
+    | DeleteResponse (Result Error Todo)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        TodoApiMsg apiMsg ->
-            let
-                ( updatedTodos, newCmd ) =
-                    JsonApi.update apiMsg model.todos
-            in
-                ( { model | todos = updatedTodos }, Cmd.map TodoApiMsg newCmd )
+        GetAllRequest ->
+            ( model, Request.getAll todoApi GetAllResponse )
+
+        CreateRequest todo ->
+            ( model, Request.create todoApi newTodo CreateResponse )
+
+        UpdateRequest todo ->
+            ( model, Request.update todoApi todo todo.uid UpdateResponse )
+
+        DeleteRequest todo ->
+            ( model, Request.delete todoApi todo todo.uid DeleteResponse )
+
+        GetAllResponse result ->
+            ( { model | todos = Response.handleGetIndexResponse result model.todos }, Cmd.none )
+
+        CreateResponse result ->
+            ( { model | todos = Response.handleCreateResponse result model.todos }, Cmd.none )
+
+        UpdateResponse result ->
+            ( { model | todos = Response.handleUpdateResponse result todosEqual model.todos }, Cmd.none )
+
+        DeleteResponse result ->
+            ( { model | todos = Response.handleDeleteResponse result todosEqual model.todos }, Cmd.none )
+
+
+todosEqual : Todo -> Todo -> Bool
+todosEqual todo todo2 =
+    todo.uid == todo2.uid
 
 
 subscriptions : Model -> Sub Msg
@@ -46,17 +86,11 @@ subscriptions model =
 init : ( Model, Cmd Msg )
 init =
     let
-        urls =
-            { getIndex = "http://todo-backend-sinatra.herokuapp.com/todos"
-            , post = "http://todo-backend-sinatra.herokuapp.com/todos"
-            , patch = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
-            , delete = "http://todo-backend-sinatra.herokuapp.com/todos/:uid"
-            }
-
         initialModel =
-            { todos = JsonApi.initCollection todoDecoder encodeTodo .uid urls }
+            { todos = NotAsked
+            }
     in
-        update (TodoApiMsg <| JsonApi.GetIndex []) initialModel
+        ( initialModel, Request.getAll todoApi GetAllResponse )
 
 
 newTodo : Todo
@@ -90,19 +124,11 @@ todoView todo =
             [ span attrs
                 [ text todo.title ]
             , Html.button
-                [ onClick
-                    (TodoApiMsg <|
-                        JsonApi.Patch (withCompleted True todo)
-                            [ ( ":uid", todo.uid ) ]
-                    )
+                [ onClick <| UpdateRequest (withCompleted True todo)
                 ]
                 [ text "Mark Completed" ]
             , Html.button
-                [ onClick
-                    (TodoApiMsg <|
-                        JsonApi.Delete todo
-                            [ ( ":uid", todo.uid ) ]
-                    )
+                [ onClick <| DeleteRequest todo
                 ]
                 [ text "Delete" ]
             ]
@@ -111,6 +137,6 @@ todoView todo =
 view : Model -> Html Msg
 view model =
     div [] <|
-        [ Html.button [ onClick (TodoApiMsg <| JsonApi.Post newTodo []) ] [ text "Save New Todo" ]
+        [ Html.button [ onClick <| CreateRequest newTodo ] [ text "Save New Todo" ]
         ]
-            ++ (List.map todoView (RemoteData.withDefault [] model.todos.resources))
+            ++ (List.map todoView (RemoteData.withDefault [] model.todos))
