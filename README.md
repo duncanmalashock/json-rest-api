@@ -1,5 +1,5 @@
 # json-api
-It's often that an Elm application needs to communicate with a JSON API. The HTTP requests and list operations involved in this communication can tend to be very similar, and writing the resulting boilerplate code can be time-consuming.
+It's often that an Elm application needs to communicate with a JSON API. The HTTP requests and list operations involved in this communication can tend to be very similar, and writing the resulting boilerplate code can be time-consuming. This package attempts to simplify that effort.
 
 **json-api** provides two modules of simple helper functions:
 
