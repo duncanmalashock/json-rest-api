@@ -79,7 +79,7 @@ getAll api responseMsg =
         (verbToString Get)
         api.baseUrl
         Http.emptyBody
-        (Decode.list api.decoder)
+        (Http.expectJson (Decode.list api.decoder))
         |> Http.send responseMsg
 
 
@@ -89,7 +89,7 @@ create api resource responseMsg =
         (verbToString Post)
         api.baseUrl
         (Http.jsonBody <| api.encoder resource)
-        api.decoder
+        (Http.expectJson api.decoder)
         |> Http.send responseMsg
 
 
@@ -99,7 +99,7 @@ update api resource urlData responseMsg =
         (verbToString api.updateVerb)
         (api.baseUrl ++ (api.toSuffix urlData))
         (Http.jsonBody <| api.encoder resource)
-        api.decoder
+        (Http.expectJson api.decoder)
         |> Http.send responseMsg
 
 
@@ -109,12 +109,12 @@ delete api resource urlData responseMsg =
         (verbToString Delete)
         (api.baseUrl ++ (api.toSuffix urlData))
         (Http.jsonBody <| api.encoder resource)
-        api.decoder
+        (Http.expectJson api.decoder)
         |> Http.send responseMsg
 
 
-standardRequest : String -> String -> Http.Body -> Decoder a -> Http.Request a
-standardRequest verb url body decoder =
+standardRequest : String -> String -> Http.Body -> Http.Expect a -> Http.Request a
+standardRequest verb url body expect =
     Http.request
         { method = verb
         , headers =
@@ -122,7 +122,7 @@ standardRequest verb url body decoder =
             ]
         , url = url
         , body = body
-        , expect = Http.expectJson decoder
+        , expect = expect
         , timeout = Nothing
         , withCredentials = False
         }
