@@ -38,13 +38,13 @@ update msg model =
         GetAllRequest ->
             ( model, Request.getAll articleApi GetAllResponse )
 
-        CreateRequest todo ->
-            ( model, Request.create articleApi newArticle CreateResponse )
+        CreateRequest article ->
+            ( model, Request.create articleApi article CreateResponse )
 
-        UpdateRequest todo ->
+        UpdateRequest article ->
             ( model, Request.update articleApi article article.id UpdateResponse )
 
-        DeleteRequest todo ->
+        DeleteRequest article ->
             ( model, Request.delete articleApi article article.id DeleteResponse )
 ...
 ```
