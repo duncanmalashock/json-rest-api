@@ -48,7 +48,7 @@ handleDeleteResponse : Response resource -> (resource -> resource -> Bool) -> We
 handleDeleteResponse result predicate collection =
     case result of
         Ok value ->
-            RemoteData.map (\c -> List.filter (predicate value) c) collection
+            RemoteData.map (\c -> List.Extra.filterNot (predicate value) c) collection
 
         Err _ ->
             collection
