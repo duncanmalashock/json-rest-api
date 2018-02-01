@@ -7,24 +7,28 @@ It's often that an Elm application needs to communicate with a JSON API. The HTT
 - `Response` - for handling responses, decoding resources, and updating a `List` of resources. 
 
 ## Usage
-1. Define a collection of data in your `Model` as a `RemoteData Http.Error`:
+1. Define a collection of resources in your `Model` as a `RemoteData Http.Error`:
 ```
 type alias Model =
     { articles : RemoteData Http.Error (List Article)
     }
 ``` 
-2. Define a `Config` for the API you're going to use:
+2. Define a `Config resource urlData` for the API you're going to use, including:
+    - A `Decoder` for your type
+    - An `encode` function for your type
+    - The base URL to be requested (for GET requests for all resources and POST requests for creating)
+    - A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlData` type (usually just the ID type of your resource)
 ```
 import JsonApi.Request as Request
 import JsonApi.Response as Response
 
-articleApi : Request.Config Article (String, String)
+articleApi : Request.Config Article String
 articleApi =
     Request.initConfig
         { decoder = articleDecoder
         , encoder = encodeArticle
         , baseUrl = "http://www.example-api.com/articles"
-        , toSuffix = (\( user, id ) -> "/user/" ++ user ++ "/" ++ id)
+        , toSuffix = (\id -> "/" ++ id)
         }
 ```
 3. Make HTTP requests by calling the `Request` helper functions in your application's `update`, passing:
@@ -48,7 +52,10 @@ update msg model =
             ( model, Request.delete articleApi article article.id DeleteResponse )
 ...
 ```
-4. Update the `List` of resources in your `Model` by calling the `Response` helper functions in the response `Msg`s:
+4. Update the `List` of resources in your `Model` by calling the `Response` helper functions in the response `Msg`s, passing:
+    - The `Result`
+    - The collection of resources
+    - When updating or deleting, an equality test function for comparing two resources (i.e. by ID)
 ```
 ...
         GetAllResponse result ->
