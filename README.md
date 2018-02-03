@@ -18,6 +18,9 @@ type alias Model =
     - An `encode` function for your type
     - The base URL to be requested (for GET requests for all resources and POST requests for creating)
     - A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlData` type (usually just the ID type of your resource)
+    - A `List` of options—currently this package supports options for:
+      - Adding request headers 
+      - Using the PATCH verb instead of the default PUT for updating a resource
 ```
 import JsonRestApi.Request as Request
 import JsonRestApi.Response as Response
@@ -29,11 +32,12 @@ articleApi =
         , encoder = encodeArticle
         , baseUrl = "http://www.example-api.com/articles"
         , toSuffix = (\id -> "/" ++ id)
+        , options = []
         }
 ```
 3. Make HTTP requests by calling the `Request` helper functions in your application's `update`, passing:
     - The `Config`
-    - When necessary, an `Article` and `urlData` (data for creating the URL suffix)
+    - When necessary, a `resource` and `urlData` (data for creating the URL suffix)
     - A `Msg` to be sent when the response arrives
 ```
 update : Msg -> Model -> ( Model, Cmd Msg )
