@@ -1,7 +1,7 @@
 module JsonRestApi.Request
     exposing
         ( Config
-        , initConfig
+        , config
         , header
         , usePatchForUpdate
         , getAll
@@ -57,7 +57,7 @@ verbToString verb =
             "DELETE"
 
 
-initConfig :
+config :
     { decoder : Decoder resource
     , encoder : resource -> Encode.Value
     , baseUrl : String
@@ -65,9 +65,9 @@ initConfig :
     , options : List ConfigOption
     }
     -> Config resource urlData
-initConfig configData =
+config configData =
     let
-        config =
+        newConfig =
             { decoder = configData.decoder
             , encoder = configData.encoder
             , baseUrl = configData.baseUrl
@@ -76,7 +76,7 @@ initConfig configData =
             , headers = [ ( "Accept", "application/json" ) ]
             }
     in
-        List.foldl applyOption config configData.options
+        List.foldl applyOption newConfig configData.options
 
 
 applyOption : ConfigOption -> Config resource urlData -> Config resource urlData

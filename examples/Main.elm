@@ -17,7 +17,7 @@ type alias Model =
 
 todoApi : Request.Config Todo String
 todoApi =
-    Request.initConfig
+    Request.config
         { decoder = todoDecoder
         , encoder = encodeTodo
         , baseUrl = "http://todo-backend-sinatra.herokuapp.com/todos"

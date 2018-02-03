@@ -1,10 +1,10 @@
 # json-rest-api
-It's often that an Elm application needs to communicate with a JSON API. The HTTP requests and list operations involved in this communication can tend to be very similar, and writing the resulting boilerplate code, while not overly difficult, can still be time-consuming. This package attempts to help out.
+It often happens that an Elm application needs to implement CRUD operations through a JSON REST API. The HTTP requests and list manipulation involved in this communication can tend to be very similar, and writing the resulting boilerplate code, while not overly difficult, can still be time-consuming. This package attempts to help out.
 
 **json-rest-api** provides two modules of simple helper functions:
 
 - `Request` - for constructing URLS, encoding resources as JSON, and sending HTTP requests.
-- `Response` - for handling responses, decoding resources, and updating a `List` of resources. 
+- `Response` - for handling responses, decoding resources, and updating a `List` of resources.
 
 ## Usage
 1. Define a collection of resources in your `Model` as a `RemoteData Http.Error`:
@@ -12,14 +12,14 @@ It's often that an Elm application needs to communicate with a JSON API. The HTT
 type alias Model =
     { articles : RemoteData Http.Error (List Article)
     }
-``` 
+```
 2. Define a `Config resource urlData` for the API you're going to use, including:
     - A `Decoder` for your type
     - An `encode` function for your type
     - The base URL to be requested (for GET requests for all resources and POST requests for creating)
     - A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlData` type (usually just the ID type of your resource)
     - A `List` of options—currently this package supports options for:
-      - Adding request headers 
+      - Adding request headers
       - Using the PATCH verb instead of the default PUT for updating a resource
 ```
 import JsonRestApi.Request as Request
@@ -27,7 +27,7 @@ import JsonRestApi.Response as Response
 
 articleApi : Request.Config Article String
 articleApi =
-    Request.initConfig
+    Request.config
         { decoder = articleDecoder
         , encoder = encodeArticle
         , baseUrl = "http://www.example-api.com/articles"
