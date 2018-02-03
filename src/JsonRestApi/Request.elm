@@ -66,13 +66,27 @@ initConfig :
     }
     -> Config resource urlData
 initConfig configData =
-    { decoder = configData.decoder
-    , encoder = configData.encoder
-    , baseUrl = configData.baseUrl
-    , toSuffix = configData.toSuffix
-    , updateVerb = updateVerbFromOptions configData.options
-    , headers = headersFromOptions configData.options
-    }
+    let
+        config =
+            { decoder = configData.decoder
+            , encoder = configData.encoder
+            , baseUrl = configData.baseUrl
+            , toSuffix = configData.toSuffix
+            , updateVerb = Put
+            , headers = [ ( "Accept", "application/json" ) ]
+            }
+    in
+        List.foldl applyOption config configData.options
+
+
+applyOption : ConfigOption -> Config resource urlData -> Config resource urlData
+applyOption option config =
+    case option of
+        Header newHeader ->
+            { config | headers = newHeader :: config.headers }
+
+        UsePatchForUpdate ->
+            { config | updateVerb = Patch }
 
 
 header : String -> String -> ConfigOption
@@ -83,49 +97,6 @@ header field value =
 usePatchForUpdate : ConfigOption
 usePatchForUpdate =
     UsePatchForUpdate
-
-
-headersFromOptions : List ConfigOption -> List ( String, String )
-headersFromOptions options =
-    ( "Accept", "application/json" )
-        :: (List.concat (List.map headerFromOption options))
-
-
-headerFromOption : ConfigOption -> List ( String, String )
-headerFromOption option =
-    case option of
-        Header ( field, value ) ->
-            [ ( field, value ) ]
-
-        _ ->
-            []
-
-
-updateVerbFromOptions : List ConfigOption -> Verb
-updateVerbFromOptions options =
-    List.filter isUpdateVerbOption options
-        |> List.take 1
-        |> updateVerbFromList
-
-
-isUpdateVerbOption : ConfigOption -> Bool
-isUpdateVerbOption option =
-    case option of
-        UsePatchForUpdate ->
-            True
-
-        _ ->
-            False
-
-
-updateVerbFromList : List ConfigOption -> Verb
-updateVerbFromList listHead =
-    case listHead of
-        [] ->
-            Put
-
-        x :: _ ->
-            Patch
 
 
 getAll : Config resource urlData -> (Result Error (List resource) -> msg) -> Cmd msg
