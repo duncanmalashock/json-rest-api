@@ -2,6 +2,7 @@ module JsonRestApi.Request
     exposing
         ( Config
         , initConfig
+        , header
         , usePatchForUpdate
         , getAll
         , create
@@ -20,14 +21,13 @@ type alias Config resource urlData =
     , baseUrl : String
     , toSuffix : urlData -> String
     , updateVerb : Verb
+    , headers : List ( String, String )
     }
 
 
-usePatchForUpdate : Config resource urlData -> Config resource urlData
-usePatchForUpdate config =
-    { config
-        | updateVerb = Patch
-    }
+type ConfigOption
+    = Header ( String, String )
+    | UsePatchForUpdate
 
 
 type Verb
@@ -62,6 +62,7 @@ initConfig :
     , encoder : resource -> Encode.Value
     , baseUrl : String
     , toSuffix : urlData -> String
+    , options : List ConfigOption
     }
     -> Config resource urlData
 initConfig configData =
@@ -69,14 +70,69 @@ initConfig configData =
     , encoder = configData.encoder
     , baseUrl = configData.baseUrl
     , toSuffix = configData.toSuffix
-    , updateVerb = Put
+    , updateVerb = updateVerbFromOptions configData.options
+    , headers = headersFromOptions configData.options
     }
+
+
+header : String -> String -> ConfigOption
+header field value =
+    Header ( field, value )
+
+
+usePatchForUpdate : ConfigOption
+usePatchForUpdate =
+    UsePatchForUpdate
+
+
+headersFromOptions : List ConfigOption -> List ( String, String )
+headersFromOptions options =
+    ( "Accept", "application/json" )
+        :: (List.concat (List.map headerFromOption options))
+
+
+headerFromOption : ConfigOption -> List ( String, String )
+headerFromOption option =
+    case option of
+        Header ( field, value ) ->
+            [ ( field, value ) ]
+
+        _ ->
+            []
+
+
+updateVerbFromOptions : List ConfigOption -> Verb
+updateVerbFromOptions options =
+    List.filter isUpdateVerbOption options
+        |> List.take 1
+        |> updateVerbFromList
+
+
+isUpdateVerbOption : ConfigOption -> Bool
+isUpdateVerbOption option =
+    case option of
+        UsePatchForUpdate ->
+            True
+
+        _ ->
+            False
+
+
+updateVerbFromList : List ConfigOption -> Verb
+updateVerbFromList listHead =
+    case listHead of
+        [] ->
+            Put
+
+        x :: _ ->
+            Patch
 
 
 getAll : Config resource urlData -> (Result Error (List resource) -> msg) -> Cmd msg
 getAll api responseMsg =
     standardRequest
         (verbToString Get)
+        api.headers
         api.baseUrl
         Http.emptyBody
         (Http.expectJson (Decode.list api.decoder))
@@ -87,6 +143,7 @@ create : Config resource urlData -> resource -> (Result Error resource -> msg) -
 create api resource responseMsg =
     standardRequest
         (verbToString Post)
+        api.headers
         api.baseUrl
         (Http.jsonBody <| api.encoder resource)
         (Http.expectJson api.decoder)
@@ -97,6 +154,7 @@ update : Config resource urlData -> resource -> urlData -> (Result Error resourc
 update api resource urlData responseMsg =
     standardRequest
         (verbToString api.updateVerb)
+        api.headers
         (api.baseUrl ++ (api.toSuffix urlData))
         (Http.jsonBody <| api.encoder resource)
         (Http.expectJson api.decoder)
@@ -107,19 +165,21 @@ delete : Config resource urlData -> resource -> urlData -> (Result Error resourc
 delete api resource urlData responseMsg =
     standardRequest
         (verbToString Delete)
+        api.headers
         (api.baseUrl ++ (api.toSuffix urlData))
         (Http.jsonBody <| api.encoder resource)
         (Http.expectJson api.decoder)
         |> Http.send responseMsg
 
 
-standardRequest : String -> String -> Http.Body -> Http.Expect a -> Http.Request a
-standardRequest verb url body expect =
+standardRequest : String -> List ( String, String ) -> String -> Http.Body -> Http.Expect a -> Http.Request a
+standardRequest verb headers url body expect =
     Http.request
         { method = verb
         , headers =
-            [ Http.header "Accept" "application/json"
-            ]
+            List.map
+                (\( field, value ) -> Http.header field value)
+                headers
         , url = url
         , body = body
         , expect = expect

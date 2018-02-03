@@ -22,8 +22,11 @@ todoApi =
         , encoder = encodeTodo
         , baseUrl = "http://todo-backend-sinatra.herokuapp.com/todos"
         , toSuffix = (\id -> "/" ++ id)
+        , options =
+            [ Request.header "Max-Forwards" "10"
+            , Request.usePatchForUpdate
+            ]
         }
-        |> Request.usePatchForUpdate
 
 
 main : Program Never Model Msg
