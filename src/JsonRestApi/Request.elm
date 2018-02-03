@@ -1,4 +1,4 @@
-module JsonApi.Request
+module JsonRestApi.Request
     exposing
         ( Config
         , initConfig

@@ -1,4 +1,4 @@
-module JsonApi.Response
+module JsonRestApi.Response
     exposing
         ( handleGetIndexResponse
         , handleCreateResponse

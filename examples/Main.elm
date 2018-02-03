@@ -1,8 +1,8 @@
 module Main exposing (..)
 
 import Todo exposing (Todo, todoDecoder, encodeTodo)
-import JsonApi.Request as Request
-import JsonApi.Response as Response
+import JsonRestApi.Request as Request
+import JsonRestApi.Response as Response
 import RemoteData exposing (RemoteData(..))
 import Http exposing (Error)
 import Html exposing (Html, div, span, text)
