@@ -15,12 +15,12 @@ type alias Model =
     }
 
 
-todoApi : Request.Config Todo String
+todoApi : Request.Config Todo () String
 todoApi =
     Request.config
         { decoder = todoDecoder
         , encoder = encodeTodo
-        , baseUrl = "http://todo-backend-sinatra.herokuapp.com/todos"
+        , toBaseUrl = (\_ -> "http://todo-backend-sinatra.herokuapp.com/todos")
         , toSuffix = (\id -> "/" ++ id)
         , options =
             [ Request.header "Max-Forwards" "10"
@@ -54,16 +54,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetAllRequest ->
-            ( model, Request.getAll todoApi GetAllResponse )
+            ( model, Request.getAll todoApi () GetAllResponse )
 
         CreateRequest todo ->
-            ( model, Request.create todoApi newTodo CreateResponse )
+            ( model, Request.create todoApi newTodo () CreateResponse )
 
         UpdateRequest todo ->
-            ( model, Request.update todoApi todo todo.uid UpdateResponse )
+            ( model, Request.update todoApi todo () todo.uid UpdateResponse )
 
         DeleteRequest todo ->
-            ( model, Request.delete todoApi todo todo.uid DeleteResponse )
+            ( model, Request.delete todoApi todo () todo.uid DeleteResponse )
 
         GetAllResponse result ->
             ( { model | todos = Response.handleGetIndexResponse result model.todos }, Cmd.none )
@@ -95,7 +95,7 @@ init =
             { todos = NotAsked
             }
     in
-        ( initialModel, Request.getAll todoApi GetAllResponse )
+        ( initialModel, Request.getAll todoApi () GetAllResponse )
 
 
 newTodo : Todo

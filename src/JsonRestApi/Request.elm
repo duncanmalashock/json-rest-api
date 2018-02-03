@@ -15,11 +15,11 @@ import Json.Encode as Encode
 import Http exposing (Error)
 
 
-type alias Config resource urlData =
+type alias Config resource urlBaseData urlSuffixData =
     { decoder : Decoder resource
     , encoder : resource -> Encode.Value
-    , baseUrl : String
-    , toSuffix : urlData -> String
+    , toBaseUrl : urlBaseData -> String
+    , toSuffix : urlSuffixData -> String
     , updateVerb : Verb
     , headers : List ( String, String )
     }
@@ -60,17 +60,17 @@ verbToString verb =
 config :
     { decoder : Decoder resource
     , encoder : resource -> Encode.Value
-    , baseUrl : String
-    , toSuffix : urlData -> String
+    , toBaseUrl : urlBaseData -> String
+    , toSuffix : urlSuffixData -> String
     , options : List ConfigOption
     }
-    -> Config resource urlData
+    -> Config resource urlBaseData urlSuffixData
 config configData =
     let
         newConfig =
             { decoder = configData.decoder
             , encoder = configData.encoder
-            , baseUrl = configData.baseUrl
+            , toBaseUrl = configData.toBaseUrl
             , toSuffix = configData.toSuffix
             , updateVerb = Put
             , headers = [ ( "Accept", "application/json" ) ]
@@ -79,7 +79,7 @@ config configData =
         List.foldl applyOption newConfig configData.options
 
 
-applyOption : ConfigOption -> Config resource urlData -> Config resource urlData
+applyOption : ConfigOption -> Config resource urlBaseData urlSuffixData -> Config resource urlBaseData urlSuffixData
 applyOption option config =
     case option of
         Header newHeader ->
@@ -99,45 +99,45 @@ usePatchForUpdate =
     UsePatchForUpdate
 
 
-getAll : Config resource urlData -> (Result Error (List resource) -> msg) -> Cmd msg
-getAll api responseMsg =
+getAll : Config resource urlBaseData urlSuffixData -> urlBaseData -> (Result Error (List resource) -> msg) -> Cmd msg
+getAll api urlBaseData responseMsg =
     standardRequest
         (verbToString Get)
         api.headers
-        api.baseUrl
+        (api.toBaseUrl urlBaseData)
         Http.emptyBody
         (Http.expectJson (Decode.list api.decoder))
         |> Http.send responseMsg
 
 
-create : Config resource urlData -> resource -> (Result Error resource -> msg) -> Cmd msg
-create api resource responseMsg =
+create : Config resource urlBaseData urlSuffixData -> resource -> urlBaseData -> (Result Error resource -> msg) -> Cmd msg
+create api resource urlBaseData responseMsg =
     standardRequest
         (verbToString Post)
         api.headers
-        api.baseUrl
+        (api.toBaseUrl urlBaseData)
         (Http.jsonBody <| api.encoder resource)
         (Http.expectJson api.decoder)
         |> Http.send responseMsg
 
 
-update : Config resource urlData -> resource -> urlData -> (Result Error resource -> msg) -> Cmd msg
-update api resource urlData responseMsg =
+update : Config resource urlBaseData urlSuffixData -> resource -> urlBaseData -> urlSuffixData -> (Result Error resource -> msg) -> Cmd msg
+update api resource urlBaseData urlSuffixData responseMsg =
     standardRequest
         (verbToString api.updateVerb)
         api.headers
-        (api.baseUrl ++ (api.toSuffix urlData))
+        ((api.toBaseUrl urlBaseData) ++ (api.toSuffix urlSuffixData))
         (Http.jsonBody <| api.encoder resource)
         (Http.expectJson api.decoder)
         |> Http.send responseMsg
 
 
-delete : Config resource urlData -> resource -> urlData -> (Result Error resource -> msg) -> Cmd msg
-delete api resource urlData responseMsg =
+delete : Config resource urlBaseData urlSuffixData -> resource -> urlBaseData -> urlSuffixData -> (Result Error resource -> msg) -> Cmd msg
+delete api resource urlBaseData urlSuffixData responseMsg =
     standardRequest
         (verbToString Delete)
         api.headers
-        (api.baseUrl ++ (api.toSuffix urlData))
+        ((api.toBaseUrl urlBaseData) ++ (api.toSuffix urlSuffixData))
         (Http.jsonBody <| api.encoder resource)
         (Http.expectJson api.decoder)
         |> Http.send responseMsg

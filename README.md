@@ -13,11 +13,11 @@ type alias Model =
     { articles : RemoteData Http.Error (List Article)
     }
 ```
-2. Define a `Config resource urlData` for the API you're going to use, including:
+2. Define a `Config resource urlBaseData urlSuffixData` for the API you're going to use, including:
     - A `Decoder` for your type
     - An `encode` function for your type
-    - The base URL to be requested (for GET requests for all resources and POST requests for creating)
-    - A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlData` type (usually just the ID type of your resource)
+    - A `toBaseUrl` for creating the URL to be requested (for GET requests for all resources and POST requests for creating) from your `urlBaseData` type
+    - A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlSuffixData` type (usually just the ID type of your resource)
     - A `List` of options—currently this package supports options for:
       - Adding request headers
       - Using the PATCH verb instead of the default PUT for updating a resource
@@ -25,18 +25,19 @@ type alias Model =
 import JsonRestApi.Request as Request
 import JsonRestApi.Response as Response
 
-articleApi : Request.Config Article String
+articleApi : Request.Config Article () String
 articleApi =
     Request.config
         { decoder = articleDecoder
         , encoder = encodeArticle
-        , baseUrl = "http://www.example-api.com/articles"
+        , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
         , toSuffix = (\id -> "/" ++ id)
         , options = []
         }
 ```
 3. Make HTTP requests by calling the `Request` helper functions in your application's `update`, passing:
     - The `Config`
+    - The `urlBaseData`, a `()` if your base URL is static
     - When necessary, a `resource` and `urlData` (data for creating the URL suffix)
     - A `Msg` to be sent when the response arrives
 ```
@@ -44,16 +45,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetAllRequest ->
-            ( model, Request.getAll articleApi GetAllResponse )
+            ( model, Request.getAll articleApi () GetAllResponse )
 
         CreateRequest article ->
-            ( model, Request.create articleApi article CreateResponse )
+            ( model, Request.create articleApi article () CreateResponse )
 
         UpdateRequest article ->
-            ( model, Request.update articleApi article article.id UpdateResponse )
+            ( model, Request.update articleApi article () article.id UpdateResponse )
 
         DeleteRequest article ->
-            ( model, Request.delete articleApi article article.id DeleteResponse )
+            ( model, Request.delete articleApi article () article.id DeleteResponse )
 ...
 ```
 4. Update the `List` of resources in your `Model` by calling the `Response` helper functions in the response `Msg`s, passing:
