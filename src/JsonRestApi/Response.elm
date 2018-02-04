@@ -15,31 +15,31 @@ Collections should be modeled as `RemoteData Http.Error (List resource)`.
 
 -}
 
-import RemoteData exposing (RemoteData)
+import RemoteData exposing (WebData)
 import Http exposing (Error)
 import List.Extra
 
 
-{-| Replace a `RemoteData Error (List resource)` with a new list if the `Result` is `Ok`.
+{-| Replace a `WebData (List resource)` with a new list if the `Result` is `Ok`.
 
     case msg of
         GetAllResponse result ->
             ( { model | articles = Response.handleGetIndexResponse result model.articles }, Cmd.none )
 
 -}
-handleGetIndexResponse : Result Error (List resource) -> RemoteData Error (List resource) -> RemoteData Error (List resource)
+handleGetIndexResponse : Result Error (List resource) -> WebData (List resource) -> WebData (List resource)
 handleGetIndexResponse result collection =
     RemoteData.fromResult result
 
 
-{-| Add a new `resource` to a `RemoteData Error (List resource)` if the `Result` is `Ok`.
+{-| Add a new `resource` to a `WebData (List resource)` if the `Result` is `Ok`.
 
     case msg of
         CreateResponse result ->
             ( { model | articles = Response.handleCreateResponse result model.articles }, Cmd.none )
 
 -}
-handleCreateResponse : Result Error resource -> RemoteData Error (List resource) -> RemoteData Error (List resource)
+handleCreateResponse : Result Error resource -> WebData (List resource) -> WebData (List resource)
 handleCreateResponse result collection =
     case result of
         Ok value ->
@@ -49,14 +49,14 @@ handleCreateResponse result collection =
             collection
 
 
-{-| Replace a `resource` with the matching `id` in a `RemoteData Error (List resource)` if the `Result` is `Ok`.
+{-| Replace a `resource` with the matching `id` in a `WebData (List resource)` if the `Result` is `Ok`.
 
     case msg of
         UpdateResponse result ->
             ( { model | articles = Response.handleUpdateResponse result articlesEqual model.articles }, Cmd.none )
 
 -}
-handleUpdateResponse : Result Error resource -> (resource -> resource -> Bool) -> RemoteData Error (List resource) -> RemoteData Error (List resource)
+handleUpdateResponse : Result Error resource -> (resource -> resource -> Bool) -> WebData (List resource) -> WebData (List resource)
 handleUpdateResponse result predicate collection =
     case result of
         Ok value ->
@@ -66,14 +66,14 @@ handleUpdateResponse result predicate collection =
             collection
 
 
-{-| Remove the `resource` with the matching `id` from a `RemoteData Error (List resource)` if the `Result` is `Ok`.
+{-| Remove the `resource` with the matching `id` from a `WebData (List resource)` if the `Result` is `Ok`.
 
     case msg of
         DeleteResponse result ->
             ( { model | articles = Response.handleDeleteResponse result articlesEqual model.articles }, Cmd.none )
 
 -}
-handleDeleteResponse : Result Error resource -> (resource -> resource -> Bool) -> RemoteData Error (List resource) -> RemoteData Error (List resource)
+handleDeleteResponse : Result Error resource -> (resource -> resource -> Bool) -> WebData (List resource) -> WebData (List resource)
 handleDeleteResponse result predicate collection =
     case result of
         Ok value ->

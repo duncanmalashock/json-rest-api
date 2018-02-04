@@ -1,34 +1,33 @@
 # json-rest-api
 An Elm application often needs to implement CRUD operations through a JSON REST API. The HTTP requests and list manipulation involved in this communication can tend to be very similar, and writing the resulting boilerplate code, while not overly difficult, can still be time-consuming.
 
-This package makes the most common cases easier to implement.
+This package makes the most common cases easier to implement by providing two modules of simple helper functions:
 
-**json-rest-api** provides two modules of simple helper functions:
-
-- `Request` - for constructing URLS, encoding resources as JSON, and sending HTTP requests.
+- `Request` - for constructing URLs, encoding resources as JSON, and sending HTTP requests.
 - `Response` - for using a response to update a `List` of resources.
 
 ## Assumptions
 
 This package makes several assumptions about communication with your REST API:
 
-- The JSON body representing a resource, sent in the request and received in the response, can be successfully decoded with the same `Decoder`.
-- Successful responses from your API include JSON in the body. *Note: 204 (No Content) responses may be handled in a future version.*
-- A collection of resources in your client application is represented as a `RemoteData Http.Error (List resource)`.
-- Resources are managed with the following HTTP verbs:
-    - A list of resources is fetched with a `GET`, and it replaces the current list if successfully returned.
-    - A resource is created with a `POST`, and it is added to the list if successfully returned.
-    - A resource is updated with either a `PUT` or `PATCH`, and it replaces an existing resource in the list if successfully returned.
-    - A resource is deleted with a `DELETE`, and it removes an existing resource in the list if successfully returned.
+- The JSON body representing a resource, sent in the request and received in the response, are always structurally the same, and can be successfully decoded with the same `Decoder`.
+- A collection of resources in your client application is represented as a `RemoteData.WebData (List resource)` (read more about WebData [here](http://package.elm-lang.org/packages/krisajenkins/remotedata/4.3.3/RemoteData#WebData)).
+- Resources are managed in the following way:
+    - A list of resources is fetched with a `GET` to the base URL, and it replaces the current list if successfully returned.
+    - A resource is created with a `POST` to the base URL, and it is added to the list if successfully returned.
+    - A resource is updated with either a `PUT` or `PATCH` to a resource-specific URL, and it replaces an existing resource in the list if successfully returned.
+    - A resource is deleted with a `DELETE` to a resource-specific URL, and it removes an existing resource in the List if successfully returned.
 - Error responses should not modify the list of resources.
 - The `Http.Error` type is sufficient to represent error states.
 
 ## Usage
-Define a collection of resources in your `Model` as a `RemoteData Http.Error (List resource)`:
+Define a collection of resources in your `Model` as a `WebData (List resource)`:
 
 ```
+import RemoteData exposing (WebData)
+
 type alias Model =
-    { articles : RemoteData Http.Error (List Article)
+    { articles : WebData (List Article)
     }
 ```
 
@@ -36,8 +35,8 @@ Define a `Config resource urlBaseData urlSuffixData` for the API you're going to
 
 - A `Decoder` for your `resource` type
 - An `encode` function for your `resource` type
-- A `toBaseUrl` for creating the URL to be requested, using your `urlBaseData` type
-- A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlSuffixData` type (usually just the ID type of your resource)
+- A `toUrlBase` for creating the URL to be requested, using your `urlBaseData` type
+- A `toUrlSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlSuffixData` type (usually just the id type of your resource)
 - A `List` of options—currently this package supports options for:
   - Adding request headers
   - Using the PATCH verb instead of the default PUT for updating a resource
@@ -51,8 +50,8 @@ articleApi =
     Request.config
         { decoder = articleDecoder
         , encoder = encodeArticle
-        , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
-        , toSuffix = (\id -> "/" ++ id)
+        , toUrlBase = (\_ -> "http://www.example-api.com/articles")
+        , toUrlSuffix = (\id -> "/" ++ id)
         , options = []
         }
 ```
@@ -86,7 +85,7 @@ Update the `List` of resources in your `Model` by calling the `Response` helper 
 
 - The `Result`
 - The collection of resources
-- When updating or deleting, an equality test function for comparing two resources (i.e. by ID)
+- When updating or deleting, an equality test function for comparing two resources (i.e. by id)
 
 ```
 ...

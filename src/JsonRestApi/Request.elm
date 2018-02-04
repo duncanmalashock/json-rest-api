@@ -37,7 +37,7 @@ import Http exposing (Error)
 type alias Config resource urlBaseData urlSuffixData =
     { decoder : Decoder resource
     , encoder : resource -> Encode.Value
-    , toBaseUrl : urlBaseData -> String
+    , toUrlBase : urlBaseData -> String
     , toSuffix : urlSuffixData -> String
     , updateVerb : HttpVerb
     , headers : List ( String, String )
@@ -101,7 +101,7 @@ verbToString verb =
         Request.config
             { decoder = articleDecoder
             , encoder = encodeArticle
-            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toUrlBase = (\_ -> "http://www.example-api.com/articles")
             , toSuffix = (\id -> "/" ++ id)
             , options = []
             }
@@ -110,7 +110,7 @@ verbToString verb =
 config :
     { decoder : Decoder resource
     , encoder : resource -> Encode.Value
-    , toBaseUrl : urlBaseData -> String
+    , toUrlBase : urlBaseData -> String
     , toSuffix : urlSuffixData -> String
     , options : List ConfigOption
     }
@@ -120,7 +120,7 @@ config configData =
         newConfig =
             { decoder = configData.decoder
             , encoder = configData.encoder
-            , toBaseUrl = configData.toBaseUrl
+            , toUrlBase = configData.toUrlBase
             , toSuffix = configData.toSuffix
             , updateVerb = HttpPut
             , headers = [ ( "Accept", "application/json" ) ]
@@ -170,7 +170,7 @@ applyOption option config =
         Request.config
             { decoder = articleDecoder
             , encoder = encodeArticle
-            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toUrlBase = (\_ -> "http://www.example-api.com/articles")
             , toSuffix = (\id -> "/" ++ id)
             , options =
               [ Request.header "Max-Forwards" "10"
@@ -191,7 +191,7 @@ header field value =
         Request.config
             { decoder = articleDecoder
             , encoder = encodeArticle
-            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toUrlBase = (\_ -> "http://www.example-api.com/articles")
             , toSuffix = (\id -> "/" ++ id)
             , options =
               [ Request.usePatchForUpdate
@@ -211,7 +211,7 @@ usePatchForUpdate =
         Request.config
             { decoder = articleDecoder
             , encoder = encodeArticle
-            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toUrlBase = (\_ -> "http://www.example-api.com/articles")
             , toSuffix = (\id -> "/" ++ id)
             , options =
               [ Request.expectNoContentOnCreate
@@ -231,7 +231,7 @@ expectNoContentOnCreate =
         Request.config
             { decoder = articleDecoder
             , encoder = encodeArticle
-            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toUrlBase = (\_ -> "http://www.example-api.com/articles")
             , toSuffix = (\id -> "/" ++ id)
             , options =
               [ Request.expectNoContentOnUpdate
@@ -251,7 +251,7 @@ expectNoContentOnUpdate =
         Request.config
             { decoder = articleDecoder
             , encoder = encodeArticle
-            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toUrlBase = (\_ -> "http://www.example-api.com/articles")
             , toSuffix = (\id -> "/" ++ id)
             , options =
               [ Request.expectNoContentOnDelete
@@ -276,7 +276,7 @@ getAll config urlBaseData responseMsg =
     request
         (verbToString HttpGet)
         config.headers
-        (config.toBaseUrl urlBaseData)
+        (config.toUrlBase urlBaseData)
         Http.emptyBody
         (Http.expectJson (Decode.list config.decoder))
         |> Http.send responseMsg
@@ -294,7 +294,7 @@ create config resource urlBaseData responseMsg =
     request
         (verbToString HttpPost)
         config.headers
-        (config.toBaseUrl urlBaseData)
+        (config.toUrlBase urlBaseData)
         (Http.jsonBody <| config.encoder resource)
         (expect RestCreate config resource)
         |> Http.send responseMsg
@@ -313,7 +313,7 @@ update config resource urlBaseData urlSuffixData responseMsg =
     request
         (verbToString config.updateVerb)
         config.headers
-        ((config.toBaseUrl urlBaseData) ++ (config.toSuffix urlSuffixData))
+        ((config.toUrlBase urlBaseData) ++ (config.toSuffix urlSuffixData))
         (Http.jsonBody <| config.encoder resource)
         (expect RestUpdate config resource)
         |> Http.send responseMsg
@@ -331,7 +331,7 @@ delete config resource urlBaseData urlSuffixData responseMsg =
     request
         (verbToString HttpDelete)
         config.headers
-        ((config.toBaseUrl urlBaseData) ++ (config.toSuffix urlSuffixData))
+        ((config.toUrlBase urlBaseData) ++ (config.toSuffix urlSuffixData))
         (Http.jsonBody <| config.encoder resource)
         (expect RestDelete config resource)
         |> Http.send responseMsg

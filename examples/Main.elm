@@ -21,7 +21,7 @@ todoApi =
     Request.config
         { decoder = todoDecoder
         , encoder = encodeTodo
-        , toBaseUrl = (\_ -> "http://todo-backend-sinatra.herokuapp.com/todos")
+        , toUrlBase = (\_ -> "http://todo-backend-sinatra.herokuapp.com/todos")
         , toSuffix = (\id -> "/" ++ id)
         , options =
             [ Request.header "Max-Forwards" "10"
