@@ -8,6 +8,8 @@ This package makes the most common cases easier to implement.
 - `Request` - for constructing URLS, encoding resources as JSON, and sending HTTP requests.
 - `Response` - for using a response to update a `List` of resources.
 
+## Assumptions
+
 This package makes several assumptions about communication with your REST API:
 - The JSON body representing a resource, sent in the request and received in the response, is structurally the same.
 - Successful responses from your API include JSON in the body. *Note: 204 (No Content) responses may be handled in a future version.*
