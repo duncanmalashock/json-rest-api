@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "Simple JSON REST API library for making requests and handling responses",
-    "repository": "https://github.com/duncanmalashock/json-api.git",
+    "repository": "https://github.com/duncanmalashock/json-rest-api.git",
     "license": "BSD3",
     "source-directories": [
         "src"
