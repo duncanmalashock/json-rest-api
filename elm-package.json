@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "summary": "Simple JSON REST API library for making requests and handling responses",
     "repository": "https://github.com/duncanmalashock/json-rest-api.git",
     "license": "BSD3",
