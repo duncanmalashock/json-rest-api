@@ -1,12 +1,15 @@
 {
     "version": "1.0.0",
-    "summary": "Simple JSON API library for making requests and handling responses",
+    "summary": "Simple JSON REST API library for making requests and handling responses",
     "repository": "https://github.com/duncanmalashock/json-api.git",
     "license": "BSD3",
     "source-directories": [
         "src"
     ],
-    "exposed-modules": [],
+    "exposed-modules": [
+        "JsonRestApi.Request",
+        "JsonRestApi.Response"
+    ],
     "dependencies": {
         "NoRedInk/elm-decode-pipeline": "3.0.0 <= v < 4.0.0",
         "elm-community/list-extra": "7.0.1 <= v < 8.0.0",
