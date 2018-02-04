@@ -343,9 +343,8 @@ expect operation config resource =
         jsonExpect =
             Http.expectJson config.decoder
 
-        -- This currently doesn't handle error response codes
         noContentExpect =
-            Http.expectStringResponse (\response -> Ok resource)
+            Http.expectStringResponse (\_ -> Ok resource)
     in
         case operation of
             RestCreate ->
