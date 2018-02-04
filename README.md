@@ -8,11 +8,13 @@ It often happens that an Elm application needs to implement CRUD operations thro
 
 ## Usage
 1. Define a collection of resources in your `Model` as a `RemoteData Http.Error`:
+
 ```
 type alias Model =
     { articles : RemoteData Http.Error (List Article)
     }
 ```
+
 2. Define a `Config resource urlBaseData urlSuffixData` for the API you're going to use, including:
     - A `Decoder` for your type
     - An `encode` function for your type
@@ -21,6 +23,7 @@ type alias Model =
     - A `List` of options—currently this package supports options for:
       - Adding request headers
       - Using the PATCH verb instead of the default PUT for updating a resource
+
 ```
 import JsonRestApi.Request as Request
 import JsonRestApi.Response as Response
@@ -35,11 +38,13 @@ articleApi =
         , options = []
         }
 ```
+
 3. Make HTTP requests by calling the `Request` helper functions in your application's `update`, passing:
     - The `Config`
     - The `urlBaseData`, a `()` if your base URL is static
     - When necessary, a `resource` and `urlData` (data for creating the URL suffix)
     - A `Msg` to be sent when the response arrives
+
 ```
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -57,10 +62,12 @@ update msg model =
             ( model, Request.delete articleApi article () article.id DeleteResponse )
 ...
 ```
+
 4. Update the `List` of resources in your `Model` by calling the `Response` helper functions in the response `Msg`s, passing:
     - The `Result`
     - The collection of resources
     - When updating or deleting, an equality test function for comparing two resources (i.e. by ID)
+
 ```
 ...
         GetAllResponse result ->
@@ -75,12 +82,3 @@ update msg model =
         DeleteResponse result ->
             ( { model | articles = Response.handleDeleteResponse result articlesEqual model.articles }, Cmd.none )
 ```
-## Example
-See an example application in the [examples](https://github.com/duncanmalashock/json-rest-api/blob/master/examples/Main.elm) directory of this repo.
-
-### To see it in the browser:
-Run the following from the `/examples` directory of this project:
-```
-elm-make Main.elm
-```
-Then open `index.html` in a browser.
