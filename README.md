@@ -11,18 +11,19 @@ This package makes the most common cases easier to implement.
 ## Assumptions
 
 This package makes several assumptions about communication with your REST API:
-- The JSON body representing a resource, sent in the request and received in the response, is structurally the same.
+- The JSON body representing a resource, sent in the request and received in the response, can be successfully decoded with the same `Decoder`.
 - Successful responses from your API include JSON in the body. *Note: 204 (No Content) responses may be handled in a future version.*
-- A collection of resources in your client application is represented as a `RemoteData Http.Error`.
+- A collection of resources in your client application is represented as a `RemoteData Http.Error (List resource)`.
 - Resources are managed with the following HTTP verbs:
     - A list of resources is fetched with a `GET`, and it replaces the current list if successfully returned.
     - A resource is created with a `POST`, and it is added to the list if successfully returned.
     - A resource is updated with either a `PUT` or `PATCH`, and it replaces an existing resource in the list if successfully returned.
     - A resource is deleted with a `DELETE`, and it removes an existing resource in the list if successfully returned.
+- Error responses should not modify the list of resources.
 - The `Http.Error` type is sufficient to represent error states.
 
 ## Usage
-Define a collection of resources in your `Model` as a `RemoteData Http.Error`:
+Define a collection of resources in your `Model` as a `RemoteData Http.Error (List resource)`:
 
 ```
 type alias Model =
@@ -92,8 +93,8 @@ Update the `List` of resources in your `Model` by calling the `Response` helper 
             ( { model | articles = Response.handleCreateResponse result model.articles }, Cmd.none )
 
         UpdateResponse result ->
-            ( { model | articles = Response.handleUpdateResponse result articlesEqual model.articles }, Cmd.none )
+            ( { model | articles = Response.handleUpdateResponse result isSameArticle model.articles }, Cmd.none )
 
         DeleteResponse result ->
-            ( { model | articles = Response.handleDeleteResponse result articlesEqual model.articles }, Cmd.none )
+            ( { model | articles = Response.handleDeleteResponse result isSameArticle model.articles }, Cmd.none )
 ```
