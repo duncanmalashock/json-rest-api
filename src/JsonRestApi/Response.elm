@@ -35,8 +35,8 @@ handleGetIndexResponse result collection =
 {-| Add a new `resource` to a `RemoteData Error (List resource)` if the `Result` is `Ok`.
 
     case msg of
-        CreateRequest article ->
-            ( model, Request.create articleApi article () CreateResponse )
+        CreateResponse result ->
+            ( { model | articles = Response.handleCreateResponse result model.articles }, Cmd.none )
 
 -}
 handleCreateResponse : Result Error resource -> RemoteData Error (List resource) -> RemoteData Error (List resource)
@@ -52,8 +52,8 @@ handleCreateResponse result collection =
 {-| Replace a `resource` with the matching `id` in a `RemoteData Error (List resource)` if the `Result` is `Ok`.
 
     case msg of
-        UpdateRequest article ->
-            ( model, Request.update articleApi article () article.id UpdateResponse )
+        UpdateResponse result ->
+            ( { model | articles = Response.handleUpdateResponse result articlesEqual model.articles }, Cmd.none )
 
 -}
 handleUpdateResponse : Result Error resource -> (resource -> resource -> Bool) -> RemoteData Error (List resource) -> RemoteData Error (List resource)
@@ -69,8 +69,8 @@ handleUpdateResponse result predicate collection =
 {-| Remove the `resource` with the matching `id` from a `RemoteData Error (List resource)` if the `Result` is `Ok`.
 
     case msg of
-        DeleteRequest article ->
-            ( model, Request.delete articleApi article () article.id DeleteResponse )
+        DeleteResponse result ->
+            ( { model | articles = Response.handleDeleteResponse result articlesEqual model.articles }, Cmd.none )
 
 -}
 handleDeleteResponse : Result Error resource -> (resource -> resource -> Bool) -> RemoteData Error (List resource) -> RemoteData Error (List resource)
