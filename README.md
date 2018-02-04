@@ -1,13 +1,26 @@
 # json-rest-api
-It often happens that an Elm application needs to implement CRUD operations through a JSON REST API. The HTTP requests and list manipulation involved in this communication can tend to be very similar, and writing the resulting boilerplate code, while not overly difficult, can still be time-consuming. This package attempts to help out.
+An Elm application often needs to implement CRUD operations through a JSON REST API. The HTTP requests and list manipulation involved in this communication can tend to be very similar, and writing the resulting boilerplate code, while not overly difficult, can still be time-consuming.
+
+This package makes the most common cases easier to implement.
 
 **json-rest-api** provides two modules of simple helper functions:
 
 - `Request` - for constructing URLS, encoding resources as JSON, and sending HTTP requests.
-- `Response` - for handling responses, decoding resources, and updating a `List` of resources.
+- `Response` - for using a response to update a `List` of resources.
+
+This package makes several assumptions about communication with your REST API:
+- The JSON body representing a resource, sent in the request and received in the response, is structurally the same.
+- Successful responses from your API include JSON in the body. *Note: 204 (No Content) responses may be handled in a future version.*
+- A collection of resources in your client application is represented as a `RemoteData Http.Error`.
+- Resources are managed with the following HTTP verbs:
+    - A list of resources is fetched with a `GET`, and it replaces the current list if successfully returned.
+    - A resource is created with a `POST`, and it is added to the list if successfully returned.
+    - A resource is updated with either a `PUT` or `PATCH`, and it replaces an existing resource in the list if successfully returned.
+    - A resource is deleted with a `DELETE`, and it removes an existing resource in the list if successfully returned.
+- The `Http.Error` type is sufficient to represent error states.
 
 ## Usage
-1. Define a collection of resources in your `Model` as a `RemoteData Http.Error`:
+Define a collection of resources in your `Model` as a `RemoteData Http.Error`:
 
 ```
 type alias Model =
@@ -15,10 +28,10 @@ type alias Model =
     }
 ```
 
-2. Define a `Config resource urlBaseData urlSuffixData` for the API you're going to use, including:
-    - A `Decoder` for your type
-    - An `encode` function for your type
-    - A `toBaseUrl` for creating the URL to be requested (for GET requests for all resources and POST requests for creating) from your `urlBaseData` type
+Define a `Config resource urlBaseData urlSuffixData` for the API you're going to use, including:
+    - A `Decoder` for your `resource` type
+    - An `encode` function for your `resource` type
+    - A `toBaseUrl` for creating the URL to be requested, using your `urlBaseData` type
     - A `toSuffix` for creating the URL suffix (used for PUT/PATCH and DELETE requests for specific resources) from your `urlSuffixData` type (usually just the ID type of your resource)
     - A `List` of options—currently this package supports options for:
       - Adding request headers
@@ -39,10 +52,10 @@ articleApi =
         }
 ```
 
-3. Make HTTP requests by calling the `Request` helper functions in your application's `update`, passing:
+Make HTTP requests by calling the `Request` helper functions in your application's `update`, passing:
     - The `Config`
-    - The `urlBaseData`, a `()` if your base URL is static
-    - When necessary, a `resource` and `urlData` (data for creating the URL suffix)
+    - The `urlBaseData`, which can simply be a `()` if your base URL is static
+    - When necessary, a `resource` and `urlSuffixData` (data for creating the URL suffix)
     - A `Msg` to be sent when the response arrives
 
 ```
@@ -63,7 +76,7 @@ update msg model =
 ...
 ```
 
-4. Update the `List` of resources in your `Model` by calling the `Response` helper functions in the response `Msg`s, passing:
+Update the `List` of resources in your `Model` by calling the `Response` helper functions in the response `Msg`s, passing:
     - The `Result`
     - The collection of resources
     - When updating or deleting, an equality test function for comparing two resources (i.e. by ID)
