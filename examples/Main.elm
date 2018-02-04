@@ -12,6 +12,7 @@ import Html.Events exposing (onClick)
 
 type alias Model =
     { todos : RemoteData Error (List Todo)
+    , api : Request.Config Todo () String
     }
 
 
@@ -25,6 +26,7 @@ todoApi =
         , options =
             [ Request.header "Max-Forwards" "10"
             , Request.usePatchForUpdate
+            , Request.expectNoContentOnDelete
             ]
         }
 
@@ -93,6 +95,7 @@ init =
     let
         initialModel =
             { todos = NotAsked
+            , api = todoApi
             }
     in
         ( initialModel, Request.getAll todoApi () GetAllResponse )

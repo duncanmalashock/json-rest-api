@@ -4,6 +4,9 @@ module JsonRestApi.Request
         , config
         , header
         , usePatchForUpdate
+        , expectNoContentOnCreate
+        , expectNoContentOnUpdate
+        , expectNoContentOnDelete
         , getAll
         , create
         , update
@@ -13,7 +16,10 @@ module JsonRestApi.Request
 {-| This module provides time-saving helpers for configuring and sending HTTP requests.
 
 # Config
-@docs Config, config, header, usePatchForUpdate
+@docs Config, config
+
+# Config Options
+@docs header, usePatchForUpdate, expectNoContentOnCreate, expectNoContentOnUpdate, expectNoContentOnDelete
 
 # Request Helpers
 @docs getAll, create, update, delete
@@ -33,40 +39,58 @@ type alias Config resource urlBaseData urlSuffixData =
     , encoder : resource -> Encode.Value
     , toBaseUrl : urlBaseData -> String
     , toSuffix : urlSuffixData -> String
-    , updateVerb : Verb
+    , updateVerb : HttpVerb
     , headers : List ( String, String )
+    , expectContent :
+        { create : ResponseContent
+        , update : ResponseContent
+        , delete : ResponseContent
+        }
     }
+
+
+type RestOperation
+    = RestGetAll
+    | RestCreate
+    | RestUpdate
+    | RestDelete
 
 
 type ConfigOption
     = Header ( String, String )
     | UsePatchForUpdate
+    | ExpectNoContent RestOperation
 
 
-type Verb
-    = Get
-    | Post
-    | Put
-    | Patch
-    | Delete
+type HttpVerb
+    = HttpGet
+    | HttpPost
+    | HttpPut
+    | HttpPatch
+    | HttpDelete
 
 
-verbToString : Verb -> String
+type ResponseContent
+    = JsonContent
+    | NoContent
+
+
+verbToString : HttpVerb -> String
 verbToString verb =
     case verb of
-        Get ->
+        HttpGet ->
             "GET"
 
-        Post ->
+        HttpPost ->
             "POST"
 
-        Put ->
+        HttpPut ->
             "PUT"
 
-        Patch ->
+        HttpPatch ->
             "PATCH"
 
-        Delete ->
+        HttpDelete ->
             "DELETE"
 
 
@@ -98,8 +122,13 @@ config configData =
             , encoder = configData.encoder
             , toBaseUrl = configData.toBaseUrl
             , toSuffix = configData.toSuffix
-            , updateVerb = Put
+            , updateVerb = HttpPut
             , headers = [ ( "Accept", "application/json" ) ]
+            , expectContent =
+                { create = JsonContent
+                , update = JsonContent
+                , delete = JsonContent
+                }
             }
     in
         List.foldl applyOption newConfig configData.options
@@ -112,7 +141,25 @@ applyOption option config =
             { config | headers = newHeader :: config.headers }
 
         UsePatchForUpdate ->
-            { config | updateVerb = Patch }
+            { config | updateVerb = HttpPatch }
+
+        ExpectNoContent restOperation ->
+            let
+                expectContent =
+                    config.expectContent
+            in
+                case restOperation of
+                    RestCreate ->
+                        { config | expectContent = { expectContent | create = NoContent } }
+
+                    RestUpdate ->
+                        { config | expectContent = { expectContent | update = NoContent } }
+
+                    RestDelete ->
+                        { config | expectContent = { expectContent | delete = NoContent } }
+
+                    _ ->
+                        config
 
 
 {-| Create an option, to be passed into `config`, specifying which HTTP headers should be added in requests.
@@ -157,6 +204,66 @@ usePatchForUpdate =
     UsePatchForUpdate
 
 
+{-| Create an option, to be passed into `config`, to expect no content in the response to a resource create operation.
+
+    articleApi : Request.Config Article () String
+    articleApi =
+        Request.config
+            { decoder = articleDecoder
+            , encoder = encodeArticle
+            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toSuffix = (\id -> "/" ++ id)
+            , options =
+              [ Request.expectNoContentOnCreate
+              ]
+            }
+
+-}
+expectNoContentOnCreate : ConfigOption
+expectNoContentOnCreate =
+    ExpectNoContent RestCreate
+
+
+{-| Create an option, to be passed into `config`, to expect no content in the response to a resource update operation.
+
+    articleApi : Request.Config Article () String
+    articleApi =
+        Request.config
+            { decoder = articleDecoder
+            , encoder = encodeArticle
+            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toSuffix = (\id -> "/" ++ id)
+            , options =
+              [ Request.expectNoContentOnUpdate
+              ]
+            }
+
+-}
+expectNoContentOnUpdate : ConfigOption
+expectNoContentOnUpdate =
+    ExpectNoContent RestUpdate
+
+
+{-| Create an option, to be passed into `config`, to expect no content in the response to a resource delete operation.
+
+    articleApi : Request.Config Article () String
+    articleApi =
+        Request.config
+            { decoder = articleDecoder
+            , encoder = encodeArticle
+            , toBaseUrl = (\_ -> "http://www.example-api.com/articles")
+            , toSuffix = (\id -> "/" ++ id)
+            , options =
+              [ Request.expectNoContentOnDelete
+              ]
+            }
+
+-}
+expectNoContentOnDelete : ConfigOption
+expectNoContentOnDelete =
+    ExpectNoContent RestDelete
+
+
 {-| Trigger a HTTP `GET` request, which, if successful, returns a `msg` parameterized with a `List` of all `resource`s.
 
     case msg of
@@ -165,13 +272,13 @@ usePatchForUpdate =
 
 -}
 getAll : Config resource urlBaseData urlSuffixData -> urlBaseData -> (Result Error (List resource) -> msg) -> Cmd msg
-getAll api urlBaseData responseMsg =
+getAll config urlBaseData responseMsg =
     request
-        (verbToString Get)
-        api.headers
-        (api.toBaseUrl urlBaseData)
+        (verbToString HttpGet)
+        config.headers
+        (config.toBaseUrl urlBaseData)
         Http.emptyBody
-        (Http.expectJson (Decode.list api.decoder))
+        (Http.expectJson (Decode.list config.decoder))
         |> Http.send responseMsg
 
 
@@ -183,13 +290,13 @@ getAll api urlBaseData responseMsg =
 
 -}
 create : Config resource urlBaseData urlSuffixData -> resource -> urlBaseData -> (Result Error resource -> msg) -> Cmd msg
-create api resource urlBaseData responseMsg =
+create config resource urlBaseData responseMsg =
     request
-        (verbToString Post)
-        api.headers
-        (api.toBaseUrl urlBaseData)
-        (Http.jsonBody <| api.encoder resource)
-        (Http.expectJson api.decoder)
+        (verbToString HttpPost)
+        config.headers
+        (config.toBaseUrl urlBaseData)
+        (Http.jsonBody <| config.encoder resource)
+        (expect RestCreate config resource)
         |> Http.send responseMsg
 
 
@@ -202,13 +309,13 @@ create api resource urlBaseData responseMsg =
 
 -}
 update : Config resource urlBaseData urlSuffixData -> resource -> urlBaseData -> urlSuffixData -> (Result Error resource -> msg) -> Cmd msg
-update api resource urlBaseData urlSuffixData responseMsg =
+update config resource urlBaseData urlSuffixData responseMsg =
     request
-        (verbToString api.updateVerb)
-        api.headers
-        ((api.toBaseUrl urlBaseData) ++ (api.toSuffix urlSuffixData))
-        (Http.jsonBody <| api.encoder resource)
-        (Http.expectJson api.decoder)
+        (verbToString config.updateVerb)
+        config.headers
+        ((config.toBaseUrl urlBaseData) ++ (config.toSuffix urlSuffixData))
+        (Http.jsonBody <| config.encoder resource)
+        (expect RestUpdate config resource)
         |> Http.send responseMsg
 
 
@@ -220,14 +327,53 @@ update api resource urlBaseData urlSuffixData responseMsg =
 
 -}
 delete : Config resource urlBaseData urlSuffixData -> resource -> urlBaseData -> urlSuffixData -> (Result Error resource -> msg) -> Cmd msg
-delete api resource urlBaseData urlSuffixData responseMsg =
+delete config resource urlBaseData urlSuffixData responseMsg =
     request
-        (verbToString Delete)
-        api.headers
-        ((api.toBaseUrl urlBaseData) ++ (api.toSuffix urlSuffixData))
-        (Http.jsonBody <| api.encoder resource)
-        (Http.expectJson api.decoder)
+        (verbToString HttpDelete)
+        config.headers
+        ((config.toBaseUrl urlBaseData) ++ (config.toSuffix urlSuffixData))
+        (Http.jsonBody <| config.encoder resource)
+        (expect RestDelete config resource)
         |> Http.send responseMsg
+
+
+expect : RestOperation -> Config resource urlBaseData urlSuffixData -> resource -> Http.Expect resource
+expect operation config resource =
+    let
+        jsonExpect =
+            Http.expectJson config.decoder
+
+        -- This currently doesn't handle error response codes
+        noContentExpect =
+            Http.expectStringResponse (\response -> Ok resource)
+    in
+        case operation of
+            RestCreate ->
+                case config.expectContent.create of
+                    JsonContent ->
+                        jsonExpect
+
+                    NoContent ->
+                        noContentExpect
+
+            RestUpdate ->
+                case config.expectContent.update of
+                    JsonContent ->
+                        jsonExpect
+
+                    NoContent ->
+                        noContentExpect
+
+            RestDelete ->
+                case config.expectContent.delete of
+                    JsonContent ->
+                        jsonExpect
+
+                    NoContent ->
+                        noContentExpect
+
+            _ ->
+                jsonExpect
 
 
 request : String -> List ( String, String ) -> String -> Http.Body -> Http.Expect a -> Http.Request a
